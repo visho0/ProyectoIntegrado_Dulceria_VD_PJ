@@ -1,0 +1,67 @@
+[
+  {
+    "model": "production.category",
+    "pk": 1,
+    "fields": {
+      "name": "Dulces Tradicionales",
+      "description": "Dulces mexicanos tradicionales y artesanales",
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "production.category",
+    "pk": 2,
+    "fields": {
+      "name": "Chocolates",
+      "description": "Chocolates de diferentes tipos y presentaciones",
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 1,
+    "fields": {
+      "name": "Cajeta de Leche",
+      "sku": "DUL-001",
+      "category": 1,
+      "description": "Cajeta tradicional de leche de cabra, 250g",
+      "price": "45.00",
+      "stock": 50,
+      "is_active": true,
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 2,
+    "fields": {
+      "name": "Ate de Guayaba",
+      "sku": "DUL-002",
+      "category": 1,
+      "description": "Ate artesanal de guayaba, 200g",
+      "price": "35.00",
+      "stock": 30,
+      "is_active": true,
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 3,
+    "fields": {
+      "name": "Chocolate Amargo 70%",
+      "sku": "CHO-001",
+      "category": 2,
+      "description": "Chocolate amargo premium 70% cacao, 100g",
+      "price": "65.00",
+      "stock": 25,
+      "is_active": true,
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
+    }
+  }
+]
