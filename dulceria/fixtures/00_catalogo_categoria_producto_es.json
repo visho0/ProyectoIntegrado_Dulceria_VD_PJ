@@ -3,17 +3,10 @@
     "model": "production.category",
     "pk": 1,
     "fields": {
-<<<<<<< HEAD
-      "name": "Dulces",
-      "description": "Productos dulces y confitería",
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z"
-=======
       "name": "Dulces Tradicionales",
       "description": "Dulces mexicanos tradicionales y artesanales",
       "created_at": "2025-01-01T10:00:00Z",
       "updated_at": "2025-01-01T10:00:00Z"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
     }
   },
   {
@@ -21,32 +14,15 @@
     "pk": 2,
     "fields": {
       "name": "Chocolates",
-<<<<<<< HEAD
-      "description": "Productos de chocolate",
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z"
-=======
       "description": "Chocolates de diferentes tipos y presentaciones",
       "created_at": "2025-01-01T10:00:00Z",
       "updated_at": "2025-01-01T10:00:00Z"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
     }
   },
   {
     "model": "production.product",
     "pk": 1,
     "fields": {
-<<<<<<< HEAD
-      "name": "Caramelo de Fresa",
-      "sku": "CAR001",
-      "description": "Caramelo suave de fresa",
-      "price": "5.50",
-      "stock": 100,
-      "is_active": true,
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z",
-      "category": 1
-=======
       "name": "Cajeta de Leche",
       "sku": "DUL-001",
       "category": 1,
@@ -56,24 +32,12 @@
       "is_active": true,
       "created_at": "2025-01-01T10:00:00Z",
       "updated_at": "2025-01-01T10:00:00Z"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
     }
   },
   {
     "model": "production.product",
     "pk": 2,
     "fields": {
-<<<<<<< HEAD
-      "name": "Chocolate Negro",
-      "sku": "CHO001",
-      "description": "Chocolate negro premium",
-      "price": "12.00",
-      "stock": 50,
-      "is_active": true,
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z",
-      "category": 2
-=======
       "name": "Ate de Guayaba",
       "sku": "DUL-002",
       "category": 1,
@@ -83,24 +47,12 @@
       "is_active": true,
       "created_at": "2025-01-01T10:00:00Z",
       "updated_at": "2025-01-01T10:00:00Z"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
     }
   },
   {
     "model": "production.product",
     "pk": 3,
     "fields": {
-<<<<<<< HEAD
-      "name": "Gomitas de Frutas",
-      "sku": "GOM001",
-      "description": "Gomitas de frutas variadas",
-      "price": "8.75",
-      "stock": 75,
-      "is_active": true,
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z",
-      "category": 1
-=======
       "name": "Chocolate Amargo 70%",
       "sku": "CHO-001",
       "category": 2,
@@ -110,7 +62,6 @@
       "is_active": true,
       "created_at": "2025-01-01T10:00:00Z",
       "updated_at": "2025-01-01T10:00:00Z"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
     }
   }
 ]

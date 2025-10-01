@@ -38,15 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
     'organizations',
     'accounts',
     'production',
-=======
-    'production',
-    'accounts',
-    'organizations',
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
 ]
 
 MIDDLEWARE = [
@@ -140,8 +134,6 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
-<<<<<<< HEAD
-=======
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -150,7 +142,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
->>>>>>> 04e6a5ee1fc4dece109bf9b7c90a778916ede4c7
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

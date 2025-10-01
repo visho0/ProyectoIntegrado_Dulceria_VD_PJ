@@ -1,8 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.db.models import Count, Avg
-from .models import Product, Category, Measurement, Device
-from organizations.models import Organization
+from .models import Product, Category, Measurement
+from organizations.models import Organization, Device
 
 @login_required
 def dashboard(request):
