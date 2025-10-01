@@ -1,0 +1,67 @@
+[
+  {
+    "model": "production.category",
+    "pk": 1,
+    "fields": {
+      "name": "Dulces",
+      "description": "Productos dulces y confitería",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "production.category",
+    "pk": 2,
+    "fields": {
+      "name": "Chocolates",
+      "description": "Productos de chocolate",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 1,
+    "fields": {
+      "name": "Caramelo de Fresa",
+      "sku": "CAR001",
+      "description": "Caramelo suave de fresa",
+      "price": "5.50",
+      "stock": 100,
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z",
+      "category": 1
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 2,
+    "fields": {
+      "name": "Chocolate Negro",
+      "sku": "CHO001",
+      "description": "Chocolate negro premium",
+      "price": "12.00",
+      "stock": 50,
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z",
+      "category": 2
+    }
+  },
+  {
+    "model": "production.product",
+    "pk": 3,
+    "fields": {
+      "name": "Gomitas de Frutas",
+      "sku": "GOM001",
+      "description": "Gomitas de frutas variadas",
+      "price": "8.75",
+      "stock": 75,
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z",
+      "category": 1
+    }
+  }
+]
