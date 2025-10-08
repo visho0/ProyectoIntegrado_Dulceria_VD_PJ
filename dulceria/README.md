@@ -2,60 +2,57 @@
 
 Sistema completo de gestión para una dulcería desarrollado con Django, que incluye catálogo de productos, sistema de alertas, gestión de organizaciones y dispositivos.
 
+## 🚀 Inicio Rápido
+
+### Instalación Automática (Recomendado)
+
+```bash
+# 1. Clonar el repositorio
+git clone <url-del-repositorio>
+cd ProyectoIntegrado_Dulceria_VD_PJ/dulceria
+
+# 2. Crear entorno virtual e instalar dependencias
+python -m venv venv
+.\venv\Scripts\Activate.ps1  # Windows PowerShell
+pip install -r requirements.txt
+
+# 3. Crear base de datos 'dulceria_db' en phpMyAdmin (WAMP)
+
+# 4. Configuración automática (migraciones + datos + usuarios)
+python configurar_proyecto.py
+
+# 5. Iniciar servidor
+python manage.py runserver
+```
+
+**¡Eso es todo!** El proyecto quedará exactamente igual en cualquier PC.
+
+📖 **Guía detallada**: Ver `INICIO_RAPIDO.md`
+
 ## Características
 
-- **Catálogo de Productos**: Gestión completa de categorías y productos
+- **Catálogo de Productos**: Gestión completa de categorías y productos con imágenes
 - **Sistema de Alertas**: Reglas de alerta configurables por producto
 - **Gestión de Organizaciones**: Múltiples organizaciones con zonas y dispositivos
 - **Mediciones**: Registro de mediciones de dispositivos con jerarquía de fechas
-- **Autenticación**: Sistema de login/logout con perfiles de usuario
+- **Autenticación Multi-Rol**: Sistema de login con roles (Admin, Gerente, Empleado)
 - **Admin Django**: Panel de administración completamente configurado
+- **Configuración Automática**: Script de setup en un solo comando
 
 ## Requisitos
 
 - Python 3.8+
 - Django 5.2+
+- MySQL (vía WAMP)
+- mysqlclient
 
-## Instalación
+## 🔐 Usuarios del Sistema
 
-1. **Clonar el repositorio**:
-   ```bash
-   git clone <url-del-repositorio>
-   cd dulceria
-   ```
-
-2. **Instalar dependencias**:
-   ```bash
-   pip install django
-   ```
-
-3. **Configurar base de datos**:
-   - Por defecto usa SQLite (no requiere configuración adicional)
-   - Para MySQL, descomenta la configuración en `settings.py` y crea un archivo `.env`
-
-4. **Aplicar migraciones**:
-   ```bash
-   python manage.py migrate
-   ```
-
-5. **Cargar datos de ejemplo**:
-   ```bash
-   python manage.py loaddata fixtures/03_organizacion_zona_dispositivo_es.json
-   python manage.py loaddata fixtures/00_catalogo_categoria_producto_es.json
-   python manage.py loaddata fixtures/01_catalogo_alertas_es.json
-   python manage.py loaddata fixtures/02_catalogo_producto_alert_es.json
-   python manage.py loaddata fixtures/04_mediciones_ejemplo_es.json
-   ```
-
-6. **Configurar usuario administrador**:
-   ```bash
-   python manage.py setup_admin
-   ```
-
-7. **Ejecutar servidor**:
-   ```bash
-   python manage.py runserver
-   ```
+| Usuario | Password | Rol | Acceso |
+|---------|----------|-----|--------|
+| `admin` | `admin123` | Administrador | Acceso completo |
+| `gerente` | `gerente123` | Gerente | Dashboard, Productos |
+| `empleado` | `empleado123` | Empleado | Productos |
 
 ## Acceso al Sistema
 
@@ -130,32 +127,70 @@ No requiere configuración adicional.
 ## Comandos Útiles
 
 ```bash
+# Configuración completa automática (recomendado)
+python configurar_proyecto.py
+
+# Verificar que todo esté configurado correctamente
+python verificar_configuracion.py
+
+# Crear usuarios de prueba
+python manage.py create_test_users
+
+# Exportar datos actuales (si haces cambios)
+python manage.py dumpdata --indent 2 --exclude contenttypes --exclude auth.permission -o fixtures/datos_iniciales.json
+
+# Cargar datos iniciales
+python manage.py loaddata fixtures/datos_iniciales.json
+
 # Crear migraciones
 python manage.py makemigrations
 
 # Aplicar migraciones
 python manage.py migrate
 
-# Cargar todos los fixtures
-python manage.py loaddata fixtures/03_organizacion_zona_dispositivo_es.json
-python manage.py loaddata fixtures/00_catalogo_categoria_producto_es.json
-python manage.py loaddata fixtures/01_catalogo_alertas_es.json
-python manage.py loaddata fixtures/02_catalogo_producto_alert_es.json
-python manage.py loaddata fixtures/04_mediciones_ejemplo_es.json
-
-# Configurar admin
-python manage.py setup_admin
-
-# Crear superusuario
+# Crear superusuario adicional
 python manage.py createsuperuser
+
+# Iniciar servidor
+python manage.py runserver
 ```
+
+## 📂 Archivos de Configuración
+
+| Archivo | Descripción |
+|---------|-------------|
+| `configurar_proyecto.py` | Script de configuración automática (todo en uno) |
+| `verificar_configuracion.py` | Script para verificar que todo funcione |
+| `exportar_para_compartir.py` | Script para exportar datos actuales |
+| `fixtures/datos_iniciales.json` | Todos los datos del proyecto |
+| `INICIO_RAPIDO.md` | Guía de inicio rápido |
+| `GUIA_CONFIGURACION_COMPAÑERO.md` | Guía detallada para configurar |
+| `CHECKLIST_INICIO_RAPIDO.md` | Checklist paso a paso |
+
+## 🔄 Compartir el Proyecto
+
+Para compartir el proyecto con otros desarrolladores:
+
+1. **Sube todo a GitHub** (los fixtures ya están incluidos)
+2. **Comparte el repositorio**
+3. **Ellos ejecutan**:
+   ```bash
+   git clone <url>
+   cd dulceria
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   python configurar_proyecto.py
+   ```
+
+**¡Todo quedará exactamente igual!** 🎉
 
 ## Tecnologías Utilizadas
 
 - **Backend**: Django 5.2
-- **Base de Datos**: SQLite (configurable a MySQL)
+- **Base de Datos**: MySQL (vía WAMP)
 - **Frontend**: Bootstrap 5.3, Bootstrap Icons
-- **Autenticación**: Django Auth System
+- **Autenticación**: Django Auth System con roles personalizados
 - **Admin**: Django Admin con configuraciones personalizadas
 
 ## Licencia

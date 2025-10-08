@@ -1,0 +1,509 @@
+[
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "admin",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "manager",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "employee",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$n6rBuORX4FQXlv7sIsyjYJ$j9G4gFZb8jlUowYvQ567rrfPD7cgbuS2BV9rRfJ21P0=",
+    "last_login": "2025-10-08T04:12:05.286",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "Administrador",
+    "last_name": "Sistema",
+    "email": "admin@dulceria.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-08T06:44:07.673",
+    "groups": [
+      [
+        "admin"
+      ]
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$PtUkr4IgXWyWURtaw5cZLc$PG6fevW+HbZSzuLExNblFFFEEcqahFldzCRAVvzbCTs=",
+    "last_login": "2025-10-08T16:55:25.488",
+    "is_superuser": false,
+    "username": "gerente",
+    "first_name": "Gerente",
+    "last_name": "Ventas",
+    "email": "gerente@dulceria.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-08T06:44:08.134",
+    "groups": [
+      [
+        "manager"
+      ]
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$zs1r8L0aCP6YbQnlaUWfSr$nPw5CTsdm6wdUYm+vy8y1X9vJpO3lkH4RAwASXjeiRM=",
+    "last_login": "2025-10-08T04:05:33.898",
+    "is_superuser": false,
+    "username": "empleado",
+    "first_name": "Empleado",
+    "last_name": "Ventas",
+    "email": "empleado@dulceria.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-10-08T06:44:08.585",
+    "groups": [
+      [
+        "employee"
+      ]
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "organizations.organization",
+  "pk": 1,
+  "fields": {
+    "name": "Dulcería Central",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "deleted_at": null
+  }
+},
+{
+  "model": "organizations.organization",
+  "pk": 2,
+  "fields": {
+    "name": "Fábrica",
+    "created_at": "2025-10-08T06:44:07.664",
+    "updated_at": "2025-10-08T06:44:07.664",
+    "deleted_at": null
+  }
+},
+{
+  "model": "organizations.organization",
+  "pk": 3,
+  "fields": {
+    "name": "Sucursal 1 Mall Plaza",
+    "created_at": "2025-10-08T06:44:07.666",
+    "updated_at": "2025-10-08T06:44:07.666",
+    "deleted_at": null
+  }
+},
+{
+  "model": "organizations.zone",
+  "pk": 1,
+  "fields": {
+    "name": "Almacén Principal",
+    "description": "Zona de almacenamiento principal de productos",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "organization": 1
+  }
+},
+{
+  "model": "organizations.zone",
+  "pk": 2,
+  "fields": {
+    "name": "Área de Venta",
+    "description": "Zona de exhibición y venta al público",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "organization": 1
+  }
+},
+{
+  "model": "organizations.device",
+  "pk": 1,
+  "fields": {
+    "name": "Sensor de Temperatura - Almacén",
+    "serial": "TEMP-001",
+    "status": "active",
+    "description": "Sensor de temperatura para control de almacén",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "zone": 1
+  }
+},
+{
+  "model": "organizations.device",
+  "pk": 2,
+  "fields": {
+    "name": "Sensor de Humedad - Almacén",
+    "serial": "HUM-001",
+    "status": "active",
+    "description": "Sensor de humedad para control de almacén",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "zone": 1
+  }
+},
+{
+  "model": "organizations.device",
+  "pk": 3,
+  "fields": {
+    "name": "Termómetro Digital - Venta",
+    "serial": "TERM-001",
+    "status": "active",
+    "description": "Termómetro digital para área de venta",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "zone": 2
+  }
+},
+{
+  "model": "accounts.userprofile",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "admin"
+    ],
+    "role": "admin",
+    "phone": "",
+    "created_at": "2025-10-08T06:44:08.131",
+    "updated_at": "2025-10-08T06:44:08.131",
+    "organization": 2
+  }
+},
+{
+  "model": "accounts.userprofile",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "gerente"
+    ],
+    "role": "manager",
+    "phone": "",
+    "created_at": "2025-10-08T06:44:08.582",
+    "updated_at": "2025-10-08T06:44:08.582",
+    "organization": 3
+  }
+},
+{
+  "model": "accounts.userprofile",
+  "pk": 3,
+  "fields": {
+    "user": [
+      "empleado"
+    ],
+    "role": "employee",
+    "phone": "",
+    "created_at": "2025-10-08T06:44:09.041",
+    "updated_at": "2025-10-08T06:44:09.041",
+    "organization": 3
+  }
+},
+{
+  "model": "production.category",
+  "pk": 1,
+  "fields": {
+    "name": "Dulces Tradicionales",
+    "description": "Dulces mexicanos tradicionales y artesanales",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.category",
+  "pk": 2,
+  "fields": {
+    "name": "Chocolates",
+    "description": "Chocolates de diferentes tipos y presentaciones",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.product",
+  "pk": 1,
+  "fields": {
+    "name": "Cajeta de Leche",
+    "sku": "DUL-001",
+    "description": "Cajeta tradicional de leche de cabra, 250g",
+    "price": "45.00",
+    "stock": 50,
+    "is_active": true,
+    "imagen": "",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "category": 1
+  }
+},
+{
+  "model": "production.product",
+  "pk": 2,
+  "fields": {
+    "name": "Ate de Guayaba",
+    "sku": "DUL-002",
+    "description": "Ate artesanal de guayaba, 200g",
+    "price": "35.00",
+    "stock": 30,
+    "is_active": true,
+    "imagen": "",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00",
+    "category": 1
+  }
+},
+{
+  "model": "production.product",
+  "pk": 3,
+  "fields": {
+    "name": "Chocolate Amargo 70%",
+    "sku": "CHO-001",
+    "description": "Chocolate amargo premium 70% cacao, 100g",
+    "price": "65.00",
+    "stock": 25,
+    "is_active": true,
+    "imagen": "productos/b1c17abccb139825534d82d67f6f2847.jpg",
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-10-08T04:03:51.045",
+    "category": 2
+  }
+},
+{
+  "model": "production.product",
+  "pk": 4,
+  "fields": {
+    "name": "aaa",
+    "sku": "0011",
+    "description": "sasa",
+    "price": "1222.00",
+    "stock": 1,
+    "is_active": false,
+    "imagen": "productos/a.jpg",
+    "created_at": "2025-10-08T04:03:33.822",
+    "updated_at": "2025-10-08T04:03:33.822",
+    "category": 2
+  }
+},
+{
+  "model": "production.product",
+  "pk": 5,
+  "fields": {
+    "name": "wqwq",
+    "sku": "wqwq",
+    "description": "wqwq",
+    "price": "111.00",
+    "stock": 4,
+    "is_active": true,
+    "imagen": "productos/777.jpg",
+    "created_at": "2025-10-08T04:04:14.007",
+    "updated_at": "2025-10-08T04:04:14.007",
+    "category": 2
+  }
+},
+{
+  "model": "production.alertrule",
+  "pk": 1,
+  "fields": {
+    "name": "Stock Bajo",
+    "severity": "medium",
+    "min_threshold": "0.00",
+    "max_threshold": "10.00",
+    "description": "Alerta cuando el stock de un producto está por debajo de 10 unidades",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.alertrule",
+  "pk": 2,
+  "fields": {
+    "name": "Stock Crítico",
+    "severity": "high",
+    "min_threshold": "0.00",
+    "max_threshold": "5.00",
+    "description": "Alerta crítica cuando el stock de un producto está por debajo de 5 unidades",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "alert_rule": 1,
+    "min_threshold": "0.00",
+    "max_threshold": "15.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 2,
+  "fields": {
+    "product": 1,
+    "alert_rule": 2,
+    "min_threshold": "0.00",
+    "max_threshold": "8.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 3,
+  "fields": {
+    "product": 2,
+    "alert_rule": 1,
+    "min_threshold": "0.00",
+    "max_threshold": "12.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 4,
+  "fields": {
+    "product": 2,
+    "alert_rule": 2,
+    "min_threshold": "0.00",
+    "max_threshold": "6.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 5,
+  "fields": {
+    "product": 3,
+    "alert_rule": 1,
+    "min_threshold": "0.00",
+    "max_threshold": "8.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.productalertrule",
+  "pk": 6,
+  "fields": {
+    "product": 3,
+    "alert_rule": 2,
+    "min_threshold": "0.00",
+    "max_threshold": "4.00",
+    "is_active": true,
+    "created_at": "2025-01-01T10:00:00",
+    "updated_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 1,
+  "fields": {
+    "device": 1,
+    "value": "22.50",
+    "unit": "°C",
+    "timestamp": "2025-01-01T08:00:00",
+    "notes": "Temperatura matutina en almacén",
+    "created_at": "2025-01-01T08:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 2,
+  "fields": {
+    "device": 1,
+    "value": "24.80",
+    "unit": "°C",
+    "timestamp": "2025-01-01T12:00:00",
+    "notes": "Temperatura mediodía en almacén",
+    "created_at": "2025-01-01T12:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 3,
+  "fields": {
+    "device": 1,
+    "value": "23.20",
+    "unit": "°C",
+    "timestamp": "2025-01-01T16:00:00",
+    "notes": "Temperatura tarde en almacén",
+    "created_at": "2025-01-01T16:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 4,
+  "fields": {
+    "device": 2,
+    "value": "45.00",
+    "unit": "%",
+    "timestamp": "2025-01-01T08:00:00",
+    "notes": "Humedad matutina en almacén",
+    "created_at": "2025-01-01T08:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 5,
+  "fields": {
+    "device": 2,
+    "value": "42.50",
+    "unit": "%",
+    "timestamp": "2025-01-01T12:00:00",
+    "notes": "Humedad mediodía en almacén",
+    "created_at": "2025-01-01T12:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 6,
+  "fields": {
+    "device": 3,
+    "value": "25.10",
+    "unit": "°C",
+    "timestamp": "2025-01-01T10:00:00",
+    "notes": "Temperatura en área de venta",
+    "created_at": "2025-01-01T10:00:00"
+  }
+},
+{
+  "model": "production.measurement",
+  "pk": 7,
+  "fields": {
+    "device": 3,
+    "value": "26.30",
+    "unit": "°C",
+    "timestamp": "2025-01-01T14:00:00",
+    "notes": "Temperatura pico en área de venta",
+    "created_at": "2025-01-01T14:00:00"
+  }
+}
+]
