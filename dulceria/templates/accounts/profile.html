@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mi Perfil - Dulcería{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Tarjeta de perfil -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="bi bi-person-circle"></i> Mi Perfil
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-person-circle display-1 text-primary"></i>
+                            </div>
+                            <h5>{{ user.get_full_name|default:user.username }}</h5>
+                            <span class="badge bg-{% if user_profile.role == 'admin' %}danger{% elif user_profile.role == 'manager' %}warning{% else %}info{% endif %} fs-6">
+                                {{ user_profile.get_role_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-8">
+                            <h5 class="border-bottom pb-2 mb-3">Información Personal</h5>
+                            
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-person"></i> Nombre de usuario:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.username }}
+                                </div>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-envelope"></i> Email:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.email|default:"No especificado" }}
+                                </div>
+                            </div>
+
+                            {% if user.first_name or user.last_name %}
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-person-badge"></i> Nombre completo:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.first_name }} {{ user.last_name }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if user_profile.phone %}
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-telephone"></i> Teléfono:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user_profile.phone }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-calendar"></i> Último acceso:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.last_login|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col-sm-4">
+                                    <strong><i class="bi bi-calendar-check"></i> Fecha de registro:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.date_joined|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="border-bottom pb-2 mb-3">Información Laboral</h5>
+                    
+                    <div class="row mb-2">
+                        <div class="col-sm-4">
+                            <strong><i class="bi bi-building"></i> Organización:</strong>
+                        </div>
+                        <div class="col-sm-8">
+                            {{ user_org.name }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-sm-4">
+                            <strong><i class="bi bi-shield-check"></i> Rol:</strong>
+                        </div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-{% if user_profile.role == 'admin' %}danger{% elif user_profile.role == 'manager' %}warning{% else %}info{% endif %}">
+                                {{ user_profile.get_role_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-sm-4">
+                            <strong><i class="bi bi-check-circle"></i> Estado:</strong>
+                        </div>
+                        <div class="col-sm-8">
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactivo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if user.is_staff %}
+                    <div class="row mb-2">
+                        <div class="col-sm-4">
+                            <strong><i class="bi bi-star"></i> Permisos especiales:</strong>
+                        </div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-info">Personal del sitio</span>
+                            {% if user.is_superuser %}
+                                <span class="badge bg-danger">Superusuario</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                    </a>
+                    {% if user_profile.role == 'admin' %}
+                    <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar Perfil
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tarjeta de permisos (solo para admin y manager) -->
+            {% if user_profile.role == 'admin' or user_profile.role == 'manager' %}
+            <div class="card shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-shield-lock"></i> Permisos y Accesos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-check2-circle"></i> Puedes:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check text-success"></i> Ver productos</li>
+                                {% if user_profile.role == 'admin' or user_profile.role == 'manager' %}
+                                <li><i class="bi bi-check text-success"></i> Crear productos</li>
+                                <li><i class="bi bi-check text-success"></i> Editar productos</li>
+                                {% endif %}
+                                {% if user_profile.role == 'admin' %}
+                                <li><i class="bi bi-check text-success"></i> Acceso al panel de administración</li>
+                                <li><i class="bi bi-check text-success"></i> Gestionar usuarios</li>
+                                <li><i class="bi bi-check text-success"></i> Ver todas las organizaciones</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-info-circle"></i> Información:</h6>
+                            <p class="text-muted">
+                                Tu rol de <strong>{{ user_profile.get_role_display }}</strong> 
+                                te permite realizar las acciones listadas. Si necesitas permisos adicionales, 
+                                contacta al administrador del sistema.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

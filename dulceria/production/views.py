@@ -34,6 +34,11 @@ def dashboard(request):
 @login_required
 def products_list(request):
     """Lista de productos filtrada por organización del usuario"""
+    # Verificar si el usuario tiene perfil
+    if not hasattr(request.user, 'userprofile'):
+        messages.error(request, 'Tu usuario no tiene un perfil asignado. Contacta al administrador.')
+        return redirect('login')
+    
     user_org = request.user.userprofile.organization
     
     # Obtener productos (en este caso no hay filtro por organización en Product,

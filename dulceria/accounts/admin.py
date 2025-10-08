@@ -15,6 +15,52 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('username', 'first_name', 'last_name', 'email', 'userprofile__organization__name')
     ordering = ('username',)
     
+    def get_queryset(self, request):
+        """Filtrar usuarios según el rol del usuario actual"""
+        qs = super().get_queryset(request)
+        
+        # Si es superusuario o admin, puede ver todos
+        if request.user.is_superuser:
+            return qs
+        
+        # Si es gerente, solo ve usuarios de su organización
+        if hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'manager':
+            return qs.filter(userprofile__organization=request.user.userprofile.organization)
+        
+        return qs.none()  # Otros usuarios no pueden ver nada
+    
+    def has_add_permission(self, request):
+        """Gerentes pueden agregar usuarios"""
+        if request.user.is_superuser:
+            return True
+        if hasattr(request.user, 'userprofile') and request.user.userprofile.role in ['admin', 'manager']:
+            return True
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Gerentes pueden editar usuarios de su organización"""
+        if request.user.is_superuser:
+            return True
+        if hasattr(request.user, 'userprofile'):
+            user_role = request.user.userprofile.role
+            if user_role == 'admin':
+                return True
+            if user_role == 'manager':
+                if obj is None:
+                    return True
+                # Solo puede editar usuarios de su organización
+                if hasattr(obj, 'userprofile'):
+                    return obj.userprofile.organization == request.user.userprofile.organization
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """Solo admin puede eliminar usuarios"""
+        if request.user.is_superuser:
+            return True
+        if hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'admin':
+            return True
+        return False
+    
     def get_organization(self, obj):
         try:
             return obj.userprofile.organization.name

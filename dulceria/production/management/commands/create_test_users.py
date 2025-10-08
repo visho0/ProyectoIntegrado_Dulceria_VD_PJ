@@ -68,10 +68,11 @@ class Command(BaseCommand):
                 'email': 'gerente@dulceria.com',
                 'first_name': 'Gerente',
                 'last_name': 'Ventas',
-                'is_staff': True
+                'is_staff': True  # Necesita staff para acceder al admin
             }
         )
         manager_user.set_password('gerente123')
+        manager_user.is_staff = True  # Asegurar que tenga acceso al admin
         manager_user.save()
         
         if created:

@@ -19,7 +19,7 @@ class CustomLoginView(LoginView):
         if hasattr(user, 'userprofile'):
             role = user.userprofile.role
             if role == 'admin':
-                return reverse_lazy('admin:index')
+                return reverse_lazy('dashboard')  # Admin también ve el dashboard
             elif role == 'manager':
                 return reverse_lazy('dashboard')
             else:  # employee o viewer
@@ -34,6 +34,11 @@ class CustomLogoutView(LogoutView):
 @login_required
 def dashboard(request):
     """Dashboard principal con estadísticas básicas"""
+    # Verificar si el usuario tiene perfil
+    if not hasattr(request.user, 'userprofile'):
+        messages.error(request, 'Tu usuario no tiene un perfil asignado. Contacta al administrador.')
+        return redirect('login')
+    
     user_profile = request.user.userprofile
     user_org = user_profile.organization
     role = user_profile.role
