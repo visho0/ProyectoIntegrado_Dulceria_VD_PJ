@@ -79,9 +79,9 @@ WSGI_APPLICATION = 'dulceria.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'Dulceria_BD',
-        'USER': 'usuario_mysql',
-        'PASSWORD': 'contraseña_mysql',
+        'NAME': 'dulceria_db',  # Nombre de la base de datos
+        'USER': 'root',  # Usuario por defecto de WAMP
+        'PASSWORD': '',  # Sin contraseña por defecto en WAMP
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
