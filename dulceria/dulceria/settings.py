@@ -78,8 +78,12 @@ WSGI_APPLICATION = 'dulceria.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'Dulceria_BD',
+        'USER': 'usuario_mysql',
+        'PASSWORD': 'contraseña_mysql',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 

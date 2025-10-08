@@ -23,6 +23,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio')
     stock = models.PositiveIntegerField(default=0, verbose_name='Stock')
     is_active = models.BooleanField(default=True, verbose_name='Activo')
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True, verbose_name='Imagen')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
     category = models.ForeignKey(Category, on_delete=models.PROTECT, verbose_name='Categoría')

@@ -21,8 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("production.urls")),  # Dashboard y vistas principales
-    path("", include("accounts.urls")),    # Login, logout
+    path("", include("accounts.urls")),    # Login, logout, dashboard
+    path("", include("production.urls")),  # Vistas de productos
 ]
 
 if settings.DEBUG:

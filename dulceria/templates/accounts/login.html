@@ -1,70 +1,110 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Iniciar Sesión - Dulcería{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <i class="bi bi-shop display-4 text-primary"></i>
-                    <h2 class="h4 mt-2">Sistema de Dulcería</h2>
-                    <p class="text-muted">Inicia sesión para continuar</p>
-                </div>
-
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ form.non_field_errors }}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="card-title">
+                            <i class="bi bi-shop text-primary"></i>
+                            Dulcería
+                        </h2>
+                        <p class="text-muted">Sistema de Gestión</p>
                     </div>
-                {% endif %}
 
-                <form method="post" novalidate>
-                    {% csrf_token %}
-
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">
-                            <i class="bi bi-person"></i> Usuario
-                        </label>
-                        {{ form.username }}
-                        {% if form.username.errors %}
-                            <div class="text-danger small mt-1">
-                                {% for error in form.username.errors %}
-                                    <div>{{ error }}</div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Error de autenticación</h6>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <small>{{ error }}</small><br>
                                 {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.password.id_for_label }}" class="form-label">
-                            <i class="bi bi-lock"></i> Contraseña
-                        </label>
-                        {{ form.password }}
-                        {% if form.password.errors %}
-                            <div class="text-danger small mt-1">
-                                {% for error in form.password.errors %}
-                                    <div>{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    {% if next %}
-                        <input type="hidden" name="next" value="{{ next }}">
+                            {% endfor %}
+                        </div>
                     {% endif %}
 
-                    <div class="d-grid">
-                        <button class="btn btn-primary btn-lg" type="submit">
-                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-                        </button>
-                    </div>
-                </form>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Campo oculto next para conservar la ruta original -->
+                        {% if request.GET.next %}
+                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+                        {% endif %}
 
-                <div class="text-center mt-4">
-                    <small class="text-muted">
-                        ¿Problemas para acceder? Contacta al administrador
-                    </small>
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                <i class="bi bi-person"></i> Usuario
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.username.id_for_label }}" 
+                                   name="{{ form.username.name }}" 
+                                   value="{{ form.username.value|default:'' }}"
+                                   placeholder="Ingresa tu usuario"
+                                   required>
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="bi bi-lock"></i> Contraseña
+                            </label>
+                            <input type="password" 
+                                   class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.password.id_for_label }}" 
+                                   name="{{ form.password.name }}"
+                                   placeholder="Ingresa tu contraseña"
+                                   required>
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            Acceso restringido al personal autorizado
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de usuarios de prueba -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-key"></i> Usuarios de Prueba
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Admin:</small><br>
+                            <code>admin / admin123</code>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Gerente:</small><br>
+                            <code>gerente / gerente123</code>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

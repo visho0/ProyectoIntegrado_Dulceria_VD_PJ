@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Dulcería{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-speedometer2 text-primary"></i> Dashboard
+            </h1>
+            <p class="text-muted mb-0">
+                Bienvenido, {{ user.get_full_name|default:user.username }}
+                <span class="badge bg-{% if user_role == 'admin' %}danger{% elif user_role == 'manager' %}warning{% else %}info{% endif %} ms-2">
+                    {{ user_profile.get_role_display }}
+                </span>
+            </p>
+        </div>
+        <div>
+            <span class="text-muted">
+                <i class="bi bi-building"></i> {{ user_org.name }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Estadísticas según el rol -->
+    {% if user_role == 'admin' or user_role == 'manager' %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_products|default:0 }}</h4>
+                            <p class="card-text">Productos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-box display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_categories|default:0 }}</h4>
+                            <p class="card-text">Categorías</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-tags display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if user_role == 'admin' or user_role == 'manager' %}
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_devices|default:0 }}</h4>
+                            <p class="card-text">Dispositivos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-cpu display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recent_measurements|length|default:0 }}</h4>
+                            <p class="card-text">Mediciones Recientes</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-graph-up display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Acciones rápidas según el rol -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i> Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'products_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-box"></i> Ver Productos
+                            </a>
+                        </div>
+                        {% if user_role == 'admin' or user_role == 'manager' %}
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'product_create' %}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-plus-circle"></i> Crear Producto
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if user_role == 'admin' %}
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:index' %}" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-gear"></i> Panel Admin
+                            </a>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'profile' %}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-person"></i> Mi Perfil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mediciones recientes (solo para admin y manager) -->
+    {% if user_role == 'admin' or user_role == 'manager' %}
+    {% if recent_measurements %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Mediciones Recientes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Dispositivo</th>
+                                    <th>Valor</th>
+                                    <th>Fecha</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for measurement in recent_measurements %}
+                                <tr>
+                                    <td>{{ measurement.device.name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ measurement.value }} {{ measurement.unit }}
+                                        </span>
+                                    </td>
+                                    <td>{{ measurement.timestamp|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ measurement.notes|truncatechars:30 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Información del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Organización:</strong> {{ user_org.name }}</p>
+                    <p><strong>Rol:</strong> {{ user_profile.get_role_display }}</p>
+                    <p><strong>Usuario:</strong> {{ user.username }}</p>
+                    <p><strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Vista simplificada para empleados -->
+    {% if user_role == 'employee' or user_role == 'viewer' %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-box"></i> Productos Disponibles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Hay <strong>{{ total_products|default:0 }}</strong> productos activos 
+                        en <strong>{{ total_categories|default:0 }}</strong> categorías.
+                    </p>
+                    <a href="{% url 'products_list' %}" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> Ver Catálogo
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person"></i> Mi Perfil
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>Organización:</strong> {{ user_org.name }}<br>
+                        <strong>Rol:</strong> {{ user_profile.get_role_display }}
+                    </p>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-person"></i> Ver Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

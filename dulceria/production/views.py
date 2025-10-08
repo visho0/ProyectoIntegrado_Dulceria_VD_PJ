@@ -1,7 +1,9 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.db.models import Count, Avg
 from .models import Product, Category, Measurement
+from .forms import ProductForm
 from organizations.models import Organization, Device
 
 @login_required
@@ -44,3 +46,44 @@ def products_list(request):
     }
     
     return render(request, "production/products_list.html", context)
+
+@login_required
+def product_create(request):
+    """Crear nuevo producto"""
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)  # Incluir request.FILES para manejar imágenes
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Producto creado exitosamente.')
+            return redirect('products_list')
+    else:
+        form = ProductForm()
+    
+    context = {
+        'form': form,
+        'title': 'Crear Producto'
+    }
+    
+    return render(request, "production/product_form.html", context)
+
+@login_required
+def product_edit(request, pk):
+    """Editar producto existente"""
+    product = get_object_or_404(Product, pk=pk)
+    
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)  # Incluir request.FILES
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Producto actualizado exitosamente.')
+            return redirect('products_list')
+    else:
+        form = ProductForm(instance=product)
+    
+    context = {
+        'form': form,
+        'title': 'Editar Producto',
+        'product': product
+    }
+    
+    return render(request, "production/product_form.html", context)
