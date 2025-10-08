@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Entorno Virtual
+venv/
+env/
+ENV/
+.venv
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# NO ignorar fixtures - queremos que se suban a GitHub
+# !fixtures/
+# !fixtures/*.json
+
+# Media files locales (imágenes subidas por usuarios)
+# Comentado para que se compartan también
+# media/
+
+# Static files
+staticfiles/
+static_root/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Archivos temporales
+*.tmp
+*.bak
+*.backup
+
+# Configuración local (si tienes settings locales)
+# local_settings.py
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
