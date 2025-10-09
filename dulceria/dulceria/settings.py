@@ -79,17 +79,14 @@ WSGI_APPLICATION = 'dulceria.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'Dulceria_BD',
-        'USER': 'usuario_mysql',
-        'PASSWORD': 'contraseña_mysql',
+        'NAME': 'dulceria_db',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': 'localhost',
         'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-        },
     }
 }
+
 
 # Configuración para MySQL (comentada, descomenta si quieres usar MySQL)
 # DATABASES = {
