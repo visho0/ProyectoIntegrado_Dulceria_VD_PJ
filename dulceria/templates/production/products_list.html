@@ -47,10 +47,10 @@
                             <td>
                                 {% if product.imagen %}
                                     <img src="{{ product.imagen.url }}" alt="{{ product.name }}" 
-                                         class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                        class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
                                 {% else %}
                                     <div class="bg-light d-flex align-items-center justify-content-center" 
-                                         style="width: 50px; height: 50px;">
+                                        style="width: 50px; height: 50px;">
                                         <i class="bi bi-image text-muted"></i>
                                     </div>
                                 {% endif %}
@@ -95,11 +95,11 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{% url 'product_edit' product.pk %}" 
-                                       class="btn btn-outline-primary" title="Editar">
+                                    class="btn btn-outline-primary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <a href="/admin/production/product/{{ product.id }}/" 
-                                       class="btn btn-outline-info" title="Ver detalles">
+                                    class="btn btn-outline-info" title="Ver detalles">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </div>

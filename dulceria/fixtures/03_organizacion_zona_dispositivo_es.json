@@ -4,8 +4,8 @@
     "pk": 1,
     "fields": {
       "name": "Dulcería Central",
-      "created_at": "2025-01-01T10:00:00Z",
-      "updated_at": "2025-01-01T10:00:00Z",
+      "created_at": "2025-01-01T10:00:00",
+      "updated_at": "2025-01-01T10:00:00",
       "deleted_at": null
     }
   },

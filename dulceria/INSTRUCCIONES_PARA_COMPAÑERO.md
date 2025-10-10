@@ -23,7 +23,8 @@ python -m venv venv
 
 # Activar entorno (Windows PowerShell)
 .\venv\Scripts\Activate.ps1
-
+# Activar entorno (Git Bash)
+source venv/Scripts/activate
 # Instalar todas las dependencias
 pip install -r requirements.txt
 ```

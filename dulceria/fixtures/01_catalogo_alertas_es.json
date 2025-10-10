@@ -9,8 +9,8 @@
       "max_threshold": "10.00",
       "description": "Alerta cuando el stock de un producto está por debajo de 10 unidades",
       "is_active": true,
-      "created_at": "2025-01-01T10:00:00Z",
-      "updated_at": "2025-01-01T10:00:00Z"
+      "created_at": "2025-01-01T10:00:00",
+      "updated_at": "2025-01-01T10:00:00"
     }
   },
   {
@@ -23,8 +23,8 @@
       "max_threshold": "5.00",
       "description": "Alerta crítica cuando el stock de un producto está por debajo de 5 unidades",
       "is_active": true,
-      "created_at": "2025-01-01T10:00:00Z",
-      "updated_at": "2025-01-01T10:00:00Z"
+      "created_at": "2025-01-01T10:00:00",
+      "updated_at": "2025-01-01T10:00:00"
     }
   }
 ]
