@@ -1,159 +1,179 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Productos - Dulcería{% endblock %}
+{% block title %}Productos - Dulcería Lili’s{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">
-        <i class="bi bi-box"></i> Catálogo de Productos
-    </h1>
-    <a href="{% url 'product_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Agregar Producto
-    </a>
-</div>
+<div class="container mt-4 mb-5">
 
-<div class="card">
-    <div class="card-header">
-        <div class="row align-items-center">
-            <div class="col">
-                <h5 class="card-title mb-0">Lista de Productos</h5>
-            </div>
-            <div class="col-auto">
-                <span class="badge bg-primary fs-6">
-                    {{ products|length }} productos encontrados
-                </span>
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+        <h1 class="fw-bold mb-3 mb-md-0" style="color:#c62828;">
+            <i class="bi bi-box-seam"></i> Catálogo de Productos
+        </h1>
+        <a href="{% url 'product_create' %}" class="btn shadow-sm text-white"
+           style="background-color:#c62828; border:none;">
+            <i class="bi bi-plus-circle"></i> Agregar Producto
+        </a>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="card shadow-sm border-0" style="border-radius:15px;">
+        <div class="card-header border-0" 
+             style="background-color:#fff3e0; border-radius:15px 15px 0 0;">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="fw-semibold mb-0" style="color:#8b0000;">
+                        <i class="bi bi-basket"></i> Lista de Productos
+                    </h5>
+                </div>
+                <div class="col-auto">
+                    <span class="badge fs-6" 
+                          style="background-color:#f1c27d; color:#8b0000;">
+                        {{ products|length }} productos encontrados
+                    </span>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="card-body">
-        {% if products %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Imagen</th>
-                            <th>SKU</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in products %}
-                        <tr>
-                            <td>
-                                {% if product.imagen %}
-                                    <img src="{{ product.imagen.url }}" alt="{{ product.name }}" 
-                                        class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
-                                {% else %}
-                                    <div class="bg-light d-flex align-items-center justify-content-center" 
-                                        style="width: 50px; height: 50px;">
-                                        <i class="bi bi-image text-muted"></i>
+
+        <div class="card-body bg-white">
+            {% if products %}
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead style="background-color:#f1c27d; color:#8b0000;">
+                            <tr>
+                                <th>Imagen</th>
+                                <th>SKU</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    {% if product.imagen %}
+                                        <img src="{{ product.imagen.url }}" 
+                                             alt="{{ product.name }}"
+                                             class="rounded shadow-sm border"
+                                             style="width:55px; height:55px; object-fit:cover; border-color:#f1c27d;">
+                                    {% else %}
+                                        <div class="d-flex align-items-center justify-content-center rounded bg-light" 
+                                             style="width:55px; height:55px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ product.sku }}</code></td>
+                                <td>
+                                    <strong style="color:#8b0000;">{{ product.name }}</strong>
+                                    {% if product.description %}
+                                        <br>
+                                        <small class="text-muted">{{ product.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color:#ffe0b2; color:#8b0000;">
+                                        <i class="bi bi-tag"></i> {{ product.category.name }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong style="color:#c62828;">${{ product.price|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if product.stock > 10 %}
+                                        <span class="badge bg-success">{{ product.stock }}</span>
+                                    {% elif product.stock > 0 %}
+                                        <span class="badge bg-warning text-dark">{{ product.stock }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ product.stock }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.is_active %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Activo
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i> Inactivo
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'product_edit' product.pk %}" 
+                                           class="btn btn-outline-primary border-0"
+                                           style="color:#c62828;">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="/admin/production/product/{{ product.id }}/" 
+                                           class="btn btn-outline-warning border-0"
+                                           style="color:#8b0000;">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                     </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <code>{{ product.sku }}</code>
-                            </td>
-                            <td>
-                                <strong>{{ product.name }}</strong>
-                                {% if product.description %}
-                                    <br><small class="text-muted">{{ product.description|truncatechars:50 }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">
-                                    <i class="bi bi-tag"></i> {{ product.category.name }}
-                                </span>
-                            </td>
-                            <td>
-                                <strong class="text-success">${{ product.price|floatformat:2 }}</strong>
-                            </td>
-                            <td>
-                                {% if product.stock > 10 %}
-                                    <span class="badge bg-success">{{ product.stock }}</span>
-                                {% elif product.stock > 0 %}
-                                    <span class="badge bg-warning">{{ product.stock }}</span>
-                                {% else %}
-                                    <span class="badge bg-danger">{{ product.stock }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if product.is_active %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Activo
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-x-circle"></i> Inactivo
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'product_edit' product.pk %}" 
-                                    class="btn btn-outline-primary" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="/admin/production/product/{{ product.id }}/" 
-                                    class="btn btn-outline-info" title="Ver detalles">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-inbox display-4 text-muted"></i>
-                <h4 class="text-muted mt-3">No hay productos disponibles</h4>
-                <p class="text-muted">Comienza agregando productos al catálogo</p>
-                <a href="{% url 'product_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Agregar Primer Producto
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-info-circle"></i> Información
-                </h6>
-            </div>
-            <div class="card-body">
-                <p class="card-text">
-                    Esta vista muestra todos los productos activos en el sistema. 
-                    Puedes gestionar el catálogo completo desde el panel de administración.
-                </p>
-                <a href="/admin/production/product/" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-gear"></i> Gestionar en Admin
-                </a>
-            </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-4 text-muted"></i>
+                    <h4 class="text-muted mt-3">No hay productos disponibles</h4>
+                    <p class="text-muted">Comienza agregando productos al catálogo</p>
+                    <a href="{% url 'product_create' %}" 
+                       class="btn text-white shadow-sm"
+                       style="background-color:#c62828;">
+                        <i class="bi bi-plus-circle"></i> Agregar Primer Producto
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-shield-check"></i> Organización
-                </h6>
+
+    <!-- TARJETAS INFORMATIVAS -->
+    <div class="row mt-4 g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:15px;">
+                <div class="card-header border-0" style="background-color:#fff3e0;">
+                    <h6 class="fw-semibold mb-0" style="color:#c62828;">
+                        <i class="bi bi-info-circle"></i> Información
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        Esta vista muestra todos los productos activos en el sistema. 
+                        Puedes gestionar el catálogo completo desde el panel de administración.
+                    </p>
+                    <a href="/admin/production/product/" 
+                       class="btn btn-sm text-white shadow-sm"
+                       style="background-color:#c62828;">
+                        <i class="bi bi-gear"></i> Gestionar en Admin
+                    </a>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="card-text">
-                    <strong>Organización actual:</strong> {{ user_org.name }}<br>
-                    <strong>Usuario:</strong> {{ user.username }}
-                </p>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:15px;">
+                <div class="card-header border-0" style="background-color:#fff3e0;">
+                    <h6 class="fw-semibold mb-0" style="color:#c62828;">
+                        <i class="bi bi-shield-check"></i> Organización
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>Organización actual:</strong> {{ user_org.name }}<br>
+                        <strong>Usuario:</strong> {{ user.username }}
+                    </p>
+                </div>
             </div>
         </div>
     </div>

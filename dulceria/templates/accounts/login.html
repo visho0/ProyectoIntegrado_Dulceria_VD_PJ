@@ -4,106 +4,167 @@
 {% block title %}Iniciar Sesión - Dulcería{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <h2 class="card-title">
-                            <i class="bi bi-shop text-primary"></i>
-                            Dulcería
-                        </h2>
-                        <p class="text-muted">Sistema de Gestión</p>
-                    </div>
+<style>
+    body {
+        background: linear-gradient(135deg, #fff5f8 0%, #ffe9f0 100%);
+        font-family: 'Poppins', sans-serif;
+    }
 
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            <h6><i class="bi bi-exclamation-triangle"></i> Error de autenticación</h6>
-                            {% for field, errors in form.errors.items %}
-                                {% for error in errors %}
-                                    <small>{{ error }}</small><br>
-                                {% endfor %}
-                            {% endfor %}
-                        </div>
+    .login-card {
+        border: none;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+    }
+
+    .login-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .login-title {
+        font-weight: 700;
+        color: #e55b84;
+    }
+
+    .btn-primary {
+        background-color: #e55b84;
+        border-color: #e55b84;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #d84d76;
+        border-color: #d84d76;
+        box-shadow: 0 4px 10px rgba(232, 87, 133, 0.4);
+    }
+
+    .form-label i {
+        color: #e55b84;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 1px solid #f3cdda;
+    }
+
+    .form-control:focus {
+        border-color: #e55b84;
+        box-shadow: 0 0 0 0.2rem rgba(229, 91, 132, 0.25);
+    }
+
+    .divider {
+        border-top: 2px dashed #f4d0da;
+    }
+
+    .text-muted small i {
+        color: #e55b84;
+    }
+
+    .test-users-card {
+        border-radius: 15px;
+        background-color: #fff9fb;
+        border: 1px solid #f8d8e1;
+    }
+
+    .card-title i {
+        color: #e55b84;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center min-vh-35">
+        <div class="col-md-6 col-lg-4">
+            <div class="card login-card shadow-lg p-4">
+                <div class="text-center mb-4">
+                    <img src="{% static 'img/LOGO-Lilis-rojo.png' %}" alt="Logo Dulcería" width="90" class="mb-2">
+                    <h2 class="login-title mb-0">Dulcería Lili’s</h2>
+                    <p class="text-muted">Sistema de Gestión</p>
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger rounded-3">
+                    <h6><i class="bi bi-exclamation-triangle-fill"></i> Error de autenticación</h6>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <small>{{ error }}</small><br>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% if request.GET.next %}
+                        <input type="hidden" name="next" value="{{ request.GET.next }}">
                     {% endif %}
 
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <!-- Campo oculto next para conservar la ruta original -->
-                        {% if request.GET.next %}
-                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            <i class="bi bi-person-fill"></i> Usuario
+                        </label>
+                        <input type="text"
+                               class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                               id="{{ form.username.id_for_label }}"
+                               name="{{ form.username.name }}"
+                               value="{{ form.username.value|default:'' }}"
+                               placeholder="Ingresa tu usuario"
+                               required>
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </div>
                         {% endif %}
-
-                        <div class="mb-3">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">
-                                <i class="bi bi-person"></i> Usuario
-                            </label>
-                            <input type="text" 
-                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                                   id="{{ form.username.id_for_label }}" 
-                                   name="{{ form.username.name }}" 
-                                   value="{{ form.username.value|default:'' }}"
-                                   placeholder="Ingresa tu usuario"
-                                   required>
-                            {% if form.username.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.password.id_for_label }}" class="form-label">
-                                <i class="bi bi-lock"></i> Contraseña
-                            </label>
-                            <input type="password" 
-                                   class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                                   id="{{ form.password.id_for_label }}" 
-                                   name="{{ form.password.name }}"
-                                   placeholder="Ingresa tu contraseña"
-                                   required>
-                            {% if form.password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-                            </button>
-                        </div>
-                    </form>
-
-                    <hr class="my-4">
-
-                    <div class="text-center">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i>
-                            Acceso restringido al personal autorizado
-                        </small>
                     </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <i class="bi bi-lock-fill"></i> Contraseña
+                        </label>
+                        <input type="password"
+                               class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                               id="{{ form.password.id_for_label }}"
+                               name="{{ form.password.name }}"
+                               placeholder="Ingresa tu contraseña"
+                               required>
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="divider my-4">
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle-fill"></i>
+                        Acceso restringido al personal autorizado
+                    </small>
                 </div>
             </div>
 
-            <!-- Información de usuarios de prueba -->
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <i class="bi bi-key"></i> Usuarios de Prueba
-                    </h6>
-                    <div class="row">
-                        <div class="col-6">
-                            <small class="text-muted">Admin:</small><br>
-                            <code>admin / admin123</code>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Gerente:</small><br>
-                            <code>gerente / gerente123</code>
-                        </div>
+            <div class="card test-users-card mt-4 p-3">
+                <h6 class="card-title mb-2">
+                    <i class="bi bi-key-fill"></i> Usuarios de Prueba
+                </h6>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Admin</small>
+                        <code>admin / admin123</code>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Gerente</small>
+                        <code>gerente / gerente123</code>
                     </div>
                 </div>
             </div>

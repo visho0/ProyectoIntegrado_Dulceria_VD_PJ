@@ -1,24 +1,166 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Mi Perfil - Dulcería{% endblock %}
+{% block title %}Mi Perfil - Dulcería Lili's{% endblock %}
 
 {% block content %}
+<style>
+    /* 🎨 Paleta de colores basada en el logo */
+    :root {
+        --lilis-red: #C8102E;
+        --lilis-gold: #D4AF37;
+        --lilis-light: #FFF8E1;
+        --lilis-shadow: rgba(0, 0, 0, 0.15);
+    }
+
+    body {
+        background-color: var(--lilis-light);
+        color: #3a3a3a;
+        font-family: "Poppins", sans-serif;
+    }
+
+    /* 🧁 Encabezado del perfil */
+    .profile-header {
+        background: var(--lilis-red);
+        color: var(--lilis-gold);
+        border-radius: 15px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 10px var(--lilis-shadow);
+        margin-bottom: 2rem;
+    }
+
+    .profile-header img {
+        height: 85px;
+        background-color: var(--lilis-light);
+        border-radius: 50%;
+        padding: 6px;
+    }
+
+    .profile-header h2 {
+        font-weight: 700;
+        margin: 0;
+    }
+
+    /* 🪞 Tarjetas generales */
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px var(--lilis-shadow);
+        background-color: #fff;
+    }
+
+    .card-header {
+        background: var(--lilis-red);
+        color: var(--lilis-gold);
+        font-weight: 600;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    .card-body strong {
+        color: var(--lilis-red);
+    }
+
+    /* ✨ Botones personalizados */
+    .btn-secondary, .btn-primary {
+        font-weight: 600;
+        border-radius: 8px;
+        border: none;
+        transition: transform 0.2s ease;
+    }
+
+    .btn-secondary {
+        background-color: var(--lilis-gold);
+        color: var(--lilis-red);
+    }
+
+    .btn-secondary:hover {
+        background-color: #e2c565;
+        transform: scale(1.05);
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        color: var(--lilis-gold);
+    }
+
+    .btn-primary:hover {
+        background-color: #a30f25;
+        transform: scale(1.05);
+    }
+
+    /* 🏷️ Badges personalizados */
+    .badge.bg-danger, .badge.bg-warning, .badge.bg-info {
+        background-color: var(--lilis-red) !important;
+        color: var(--lilis-gold);
+        font-weight: 500;
+    }
+
+    .badge.bg-success {
+        background-color: var(--lilis-gold);
+        color: var(--lilis-red);
+        font-weight: 500;
+    }
+
+    /* 🧩 Secciones */
+    h5 {
+        color: var(--lilis-red);
+        font-weight: 600;
+    }
+
+    .border-bottom {
+        border-color: var(--lilis-gold) !important;
+    }
+
+    /* 🧍 Avatar */
+    .profile-avatar {
+        color: var(--lilis-gold);
+        background-color: var(--lilis-red);
+        border-radius: 50%;
+        padding: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile-avatar i {
+        font-size: 4rem;
+    }
+
+    /* 🧾 Lista de permisos */
+    ul.list-unstyled li i {
+        color: var(--lilis-gold);
+    }
+
+</style>
+
 <div class="container mt-4">
+    <!-- Encabezado con logo -->
+    <div class="profile-header">
+        <div>
+            <h2><i class="bi bi-person-circle"></i> Mi Perfil</h2>
+            <p class="mb-0">Gestión de cuenta personal y permisos de usuario</p>
+        </div>
+        <img src="{% static 'img/LOGO-Lilis-rojo.png' %}" alt="Logo Dulcería Lili's">
+    </div>
+
     <div class="row">
         <div class="col-md-8 mx-auto">
             <!-- Tarjeta de perfil -->
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
+            <div class="card mb-4">
+                <div class="card-header">
                     <h3 class="card-title mb-0">
-                        <i class="bi bi-person-circle"></i> Mi Perfil
+                        <i class="bi bi-person"></i> Información del Usuario
                     </h3>
                 </div>
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-4 text-center">
-                            <div class="mb-3">
-                                <i class="bi bi-person-circle display-1 text-primary"></i>
+                            <div class="profile-avatar mb-3">
+                                <i class="bi bi-person-fill"></i>
                             </div>
                             <h5>{{ user.get_full_name|default:user.username }}</h5>
                             <span class="badge bg-{% if user_profile.role == 'admin' %}danger{% elif user_profile.role == 'manager' %}warning{% else %}info{% endif %} fs-6">
@@ -26,24 +168,20 @@
                             </span>
                         </div>
                         <div class="col-md-8">
-                            <h5 class="border-bottom pb-2 mb-3">Información Personal</h5>
-                            
+                            <h5 class="border-bottom pb-2 mb-3">Datos Personales</h5>
+
                             <div class="row mb-2">
                                 <div class="col-sm-4">
-                                    <strong><i class="bi bi-person"></i> Nombre de usuario:</strong>
+                                    <strong><i class="bi bi-person"></i> Usuario:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user.username }}
-                                </div>
+                                <div class="col-sm-8">{{ user.username }}</div>
                             </div>
 
                             <div class="row mb-2">
                                 <div class="col-sm-4">
                                     <strong><i class="bi bi-envelope"></i> Email:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user.email|default:"No especificado" }}
-                                </div>
+                                <div class="col-sm-8">{{ user.email|default:"No especificado" }}</div>
                             </div>
 
                             {% if user.first_name or user.last_name %}
@@ -51,9 +189,7 @@
                                 <div class="col-sm-4">
                                     <strong><i class="bi bi-person-badge"></i> Nombre completo:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user.first_name }} {{ user.last_name }}
-                                </div>
+                                <div class="col-sm-8">{{ user.first_name }} {{ user.last_name }}</div>
                             </div>
                             {% endif %}
 
@@ -62,9 +198,7 @@
                                 <div class="col-sm-4">
                                     <strong><i class="bi bi-telephone"></i> Teléfono:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user_profile.phone }}
-                                </div>
+                                <div class="col-sm-8">{{ user_profile.phone }}</div>
                             </div>
                             {% endif %}
 
@@ -72,31 +206,24 @@
                                 <div class="col-sm-4">
                                     <strong><i class="bi bi-calendar"></i> Último acceso:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user.last_login|date:"d/m/Y H:i" }}
-                                </div>
+                                <div class="col-sm-8">{{ user.last_login|date:"d/m/Y H:i" }}</div>
                             </div>
 
                             <div class="row mb-2">
                                 <div class="col-sm-4">
-                                    <strong><i class="bi bi-calendar-check"></i> Fecha de registro:</strong>
+                                    <strong><i class="bi bi-calendar-check"></i> Registro:</strong>
                                 </div>
-                                <div class="col-sm-8">
-                                    {{ user.date_joined|date:"d/m/Y" }}
-                                </div>
+                                <div class="col-sm-8">{{ user.date_joined|date:"d/m/Y" }}</div>
                             </div>
                         </div>
                     </div>
 
                     <h5 class="border-bottom pb-2 mb-3">Información Laboral</h5>
-                    
                     <div class="row mb-2">
                         <div class="col-sm-4">
                             <strong><i class="bi bi-building"></i> Organización:</strong>
                         </div>
-                        <div class="col-sm-8">
-                            {{ user_org.name }}
-                        </div>
+                        <div class="col-sm-8">{{ user_org.name }}</div>
                     </div>
 
                     <div class="row mb-2">
@@ -139,23 +266,21 @@
                 </div>
                 <div class="card-footer text-end">
                     <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                        <i class="bi bi-arrow-left"></i> Volver
                     </a>
                     {% if user_profile.role == 'admin' %}
                     <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> Editar Perfil
+                        <i class="bi bi-pencil"></i> Editar
                     </a>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Tarjeta de permisos (solo para admin y manager) -->
+            <!-- Tarjeta de permisos -->
             {% if user_profile.role == 'admin' or user_profile.role == 'manager' %}
             <div class="card shadow mt-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-shield-lock"></i> Permisos y Accesos
-                    </h5>
+                <div class="card-header">
+                    <i class="bi bi-shield-lock"></i> Permisos y Accesos
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -168,18 +293,17 @@
                                 <li><i class="bi bi-check text-success"></i> Editar productos</li>
                                 {% endif %}
                                 {% if user_profile.role == 'admin' %}
-                                <li><i class="bi bi-check text-success"></i> Acceso al panel de administración</li>
+                                <li><i class="bi bi-check text-success"></i> Acceder al panel de administración</li>
                                 <li><i class="bi bi-check text-success"></i> Gestionar usuarios</li>
-                                <li><i class="bi bi-check text-success"></i> Ver todas las organizaciones</li>
+                                <li><i class="bi bi-check text-success"></i> Ver organizaciones</li>
                                 {% endif %}
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <h6><i class="bi bi-info-circle"></i> Información:</h6>
                             <p class="text-muted">
-                                Tu rol de <strong>{{ user_profile.get_role_display }}</strong> 
-                                te permite realizar las acciones listadas. Si necesitas permisos adicionales, 
-                                contacta al administrador del sistema.
+                                Tu rol de <strong>{{ user_profile.get_role_display }}</strong> define tus permisos actuales.  
+                                Para solicitar privilegios adicionales, contacta al administrador del sistema.
                             </p>
                         </div>
                     </div>

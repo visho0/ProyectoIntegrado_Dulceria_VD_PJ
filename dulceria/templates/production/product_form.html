@@ -4,30 +4,132 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card">
+<style>
+    body {
+        background: linear-gradient(135deg, #fffaf3 0%, #ffe6d6 100%);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .product-card {
+        border: none;
+        border-radius: 18px;
+        background: #fffdf9;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 26px rgba(204, 31, 31, 0.15);
+    }
+
+    .card-header {
+        background: linear-gradient(90deg, #b10000, #d12828);
+        border-radius: 18px 18px 0 0;
+        color: #f7e6b7;
+        text-align: center;
+        padding: 1.3rem;
+    }
+
+    .card-header h3 {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #b10000;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 1px solid #f1d4b5;
+        transition: all 0.3s ease;
+        background-color: #fffaf3;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #d7a84b;
+        box-shadow: 0 0 0 0.25rem rgba(215, 168, 75, 0.25);
+    }
+
+    .btn-primary {
+        background-color: #d7a84b;
+        border-color: #d7a84b;
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #eac76c;
+        border-color: #eac76c;
+        color: #7a3b00;
+        box-shadow: 0 4px 12px rgba(215, 168, 75, 0.4);
+    }
+
+    .btn-secondary {
+        border-radius: 10px;
+        font-weight: 600;
+        background-color: #b10000;
+        border-color: #b10000;
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #cc1f1f;
+        border-color: #cc1f1f;
+        box-shadow: 0 4px 10px rgba(204, 31, 31, 0.4);
+    }
+
+    .img-thumbnail {
+        border-radius: 15px;
+        border: 2px solid #d7a84b;
+        box-shadow: 0 4px 14px rgba(215, 168, 75, 0.25);
+    }
+
+    .form-check-label {
+        color: #7a3b00;
+        font-weight: 500;
+    }
+
+    .text-danger {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card product-card">
                 <div class="card-header">
-                    <h3 class="card-title">{{ title }}</h3>
+                    <h3><i class="bi bi-bag-heart-fill"></i> {{ title }}</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-cupcake"></i> {{ form.name.label }}
+                                    </label>
                                     {{ form.name }}
                                     {% if form.name.errors %}
                                         <div class="text-danger">{{ form.name.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
+
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.sku.id_for_label }}" class="form-label">{{ form.sku.label }}</label>
+                                    <label for="{{ form.sku.id_for_label }}" class="form-label">
+                                        <i class="bi bi-upc"></i> {{ form.sku.label }}
+                                    </label>
                                     {{ form.sku }}
                                     {% if form.sku.errors %}
                                         <div class="text-danger">{{ form.sku.errors }}</div>
@@ -37,7 +139,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="bi bi-chat-square-text"></i> {{ form.description.label }}
+                            </label>
                             {{ form.description }}
                             {% if form.description.errors %}
                                 <div class="text-danger">{{ form.description.errors }}</div>
@@ -47,25 +151,33 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.price.id_for_label }}" class="form-label">{{ form.price.label }}</label>
+                                    <label for="{{ form.price.id_for_label }}" class="form-label">
+                                        <i class="bi bi-cash-coin"></i> {{ form.price.label }}
+                                    </label>
                                     {{ form.price }}
                                     {% if form.price.errors %}
                                         <div class="text-danger">{{ form.price.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
+
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.stock.id_for_label }}" class="form-label">{{ form.stock.label }}</label>
+                                    <label for="{{ form.stock.id_for_label }}" class="form-label">
+                                        <i class="bi bi-box-seam"></i> {{ form.stock.label }}
+                                    </label>
                                     {{ form.stock }}
                                     {% if form.stock.errors %}
                                         <div class="text-danger">{{ form.stock.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
+
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                                    <label for="{{ form.category.id_for_label }}" class="form-label">
+                                        <i class="bi bi-tags-fill"></i> {{ form.category.label }}
+                                    </label>
                                     {{ form.category }}
                                     {% if form.category.errors %}
                                         <div class="text-danger">{{ form.category.errors }}</div>
@@ -74,32 +186,35 @@
                             </div>
                         </div>
 
-                        <!-- Poner foto para pruebas aquí -->
                         <div class="mb-3">
-                            <label for="{{ form.imagen.id_for_label }}" class="form-label">{{ form.imagen.label }}</label>
+                            <label for="{{ form.imagen.id_for_label }}" class="form-label">
+                                <i class="bi bi-image"></i> {{ form.imagen.label }}
+                            </label>
                             {{ form.imagen }}
                             {% if form.imagen.errors %}
                                 <div class="text-danger">{{ form.imagen.errors }}</div>
                             {% endif %}
                             {% if product and product.imagen %}
-                                <div class="mt-2">
-                                    <img src="{{ product.imagen.url }}" alt="{{ product.name }}" class="img-thumbnail" style="max-width: 200px;">
+                                <div class="mt-3 text-center">
+                                    <img src="{{ product.imagen.url }}" alt="{{ product.name }}" class="img-thumbnail" style="max-width: 220px;">
                                 </div>
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.is_active }}
-                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                                    {{ form.is_active.label }}
-                                </label>
-                            </div>
+                        <div class="form-check mb-4">
+                            {{ form.is_active }}
+                            <label class="form-check-label ms-2" for="{{ form.is_active.id_for_label }}">
+                                <i class="bi bi-toggle-on"></i> {{ form.is_active.label }}
+                            </label>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'products_list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
-                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <a href="{% url 'products_list' %}" class="btn btn-secondary px-4">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save-fill"></i> Guardar
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -108,4 +223,3 @@
     </div>
 </div>
 {% endblock %}
-
