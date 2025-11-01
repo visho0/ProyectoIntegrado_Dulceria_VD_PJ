@@ -6,7 +6,7 @@
 {% block content %}
 <style>
     body {
-        background: linear-gradient(135deg, #fff5f8 0%, #ffe9f0 100%);
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
         font-family: 'Poppins', sans-serif;
     }
 
@@ -24,53 +24,53 @@
 
     .login-title {
         font-weight: 700;
-        color: #e55b84;
+        color: #C8102E;
     }
 
     .btn-primary {
-        background-color: #e55b84;
-        border-color: #e55b84;
+        background-color: #C8102E;
+        border-color: #C8102E;
         border-radius: 10px;
         font-weight: 600;
         transition: all 0.3s ease;
     }
 
     .btn-primary:hover {
-        background-color: #d84d76;
-        border-color: #d84d76;
-        box-shadow: 0 4px 10px rgba(232, 87, 133, 0.4);
+        background-color: #B00D26;
+        border-color: #B00D26;
+        box-shadow: 0 4px 10px rgba(200, 16, 46, 0.4);
     }
 
     .form-label i {
-        color: #e55b84;
+        color: #C8102E;
     }
 
     .form-control {
         border-radius: 10px;
-        border: 1px solid #f3cdda;
+        border: 1px solid #f0cccc;
     }
 
     .form-control:focus {
-        border-color: #e55b84;
-        box-shadow: 0 0 0 0.2rem rgba(229, 91, 132, 0.25);
+        border-color: #C8102E;
+        box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.25);
     }
 
     .divider {
-        border-top: 2px dashed #f4d0da;
+        border-top: 2px dashed #f4d0d0;
     }
 
     .text-muted small i {
-        color: #e55b84;
+        color: #C8102E;
     }
 
     .test-users-card {
         border-radius: 15px;
-        background-color: #fff9fb;
-        border: 1px solid #f8d8e1;
+        background-color: #fff5f5;
+        border: 1px solid #f4d0d0;
     }
 
     .card-title i {
-        color: #e55b84;
+        color: #C8102E;
     }
 </style>
 
@@ -146,6 +146,14 @@
                 <hr class="divider my-4">
 
                 <div class="text-center">
+                    <p class="mb-2">
+                        <small class="text-muted">
+                            ¿Eres cliente? 
+                            <a href="{% url 'register_cliente' %}" style="color: #C8102E; text-decoration: none; font-weight: 600;">
+                                Crea tu cuenta aquí
+                            </a>
+                        </small>
+                    </p>
                     <small class="text-muted">
                         <i class="bi bi-info-circle-fill"></i>
                         Acceso restringido al personal autorizado

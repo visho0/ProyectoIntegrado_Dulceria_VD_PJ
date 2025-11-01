@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, Cliente
 
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
@@ -84,6 +84,15 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_filter = ('organization', 'role', 'created_at')
     ordering = ('user__username',)
     list_select_related = ('user', 'organization')
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(Cliente)
+class ClienteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'rut', 'first_name', 'last_name', 'email', 'phone', 'created_at')
+    search_fields = ('user__username', 'rut', 'first_name', 'last_name', 'email', 'phone')
+    list_filter = ('created_at',)
+    ordering = ('last_name', 'first_name')
+    list_select_related = ('user',)
     readonly_fields = ('created_at', 'updated_at')
 
 # Re-register UserAdmin

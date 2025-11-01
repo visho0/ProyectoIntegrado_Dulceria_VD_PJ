@@ -6,7 +6,9 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from .models import UserProfile
+from .forms import ClienteRegistrationForm
 
 
 class CustomLoginView(LoginView):
@@ -24,6 +26,9 @@ class CustomLoginView(LoginView):
                 return reverse_lazy('dashboard')
             else:  # employee o viewer
                 return reverse_lazy('products_list')
+        elif hasattr(user, 'cliente'):
+            # Si es un cliente, redirigir a página de productos
+            return reverse_lazy('products_list')
         return reverse_lazy('dashboard')
 
 
@@ -101,3 +106,18 @@ def profile_view(request):
     }
     
     return render(request, "accounts/profile.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def register_cliente(request):
+    """Vista de registro para clientes"""
+    if request.method == 'POST':
+        form = ClienteRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f'¡Bienvenido {user.first_name}! Tu cuenta ha sido creada exitosamente.')
+            return redirect('login')
+    else:
+        form = ClienteRegistrationForm()
+    
+    return render(request, 'accounts/register_cliente.html', {'form': form})

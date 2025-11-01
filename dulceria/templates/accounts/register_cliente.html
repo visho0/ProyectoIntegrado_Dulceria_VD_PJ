@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registro de Cliente - Dulcería{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .register-card {
+        border: none;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+    }
+
+    .register-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .register-title {
+        font-weight: 700;
+        color: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: #C8102E;
+        border-color: #C8102E;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+        box-shadow: 0 4px 10px rgba(200, 16, 46, 0.4);
+    }
+
+    .btn-secondary {
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .form-label i {
+        color: #C8102E;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 1px solid #f0cccc;
+    }
+
+    .form-control:focus {
+        border-color: #C8102E;
+        box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.25);
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .text-success a {
+        color: #C8102E;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .text-success a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card register-card shadow-lg p-4">
+                <div class="text-center mb-4">
+                    <img src="{% static 'img/LOGO-Lilis-rojo.png' %}" alt="Logo Dulcería" width="90" class="mb-2">
+                    <h2 class="register-title mb-0">Crear Cuenta</h2>
+                    <p class="text-muted">Registro para clientes</p>
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger rounded-3">
+                    <h6><i class="bi bi-exclamation-triangle-fill"></i> Errores en el formulario</h6>
+                    <ul class="mb-0">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li><small>{{ error }}</small></li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.rut.id_for_label }}" class="form-label">
+                                    <i class="bi bi-card-heading"></i> RUT
+                                </label>
+                                <input type="text"
+                                       class="form-control {% if form.rut.errors %}is-invalid{% endif %}"
+                                       id="{{ form.rut.id_for_label }}"
+                                       name="{{ form.rut.name }}"
+                                       value="{{ form.rut.value|default:'' }}"
+                                       placeholder="12345678-9"
+                                       required>
+                                {% if form.rut.help_text %}
+                                    <div class="help-text">{{ form.rut.help_text }}</div>
+                                {% endif %}
+                                {% if form.rut.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.rut.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person-fill"></i> Usuario
+                                </label>
+                                <input type="text"
+                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                       id="{{ form.username.id_for_label }}"
+                                       name="{{ form.username.name }}"
+                                       value="{{ form.username.value|default:'' }}"
+                                       placeholder="Nombre de usuario"
+                                       required>
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person"></i> Nombre
+                                </label>
+                                <input type="text"
+                                       class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                       id="{{ form.first_name.id_for_label }}"
+                                       name="{{ form.first_name.name }}"
+                                       value="{{ form.first_name.value|default:'' }}"
+                                       placeholder="Tu nombre"
+                                       required>
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person"></i> Apellido
+                                </label>
+                                <input type="text"
+                                       class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                       id="{{ form.last_name.id_for_label }}"
+                                       name="{{ form.last_name.name }}"
+                                       value="{{ form.last_name.value|default:'' }}"
+                                       placeholder="Tu apellido"
+                                       required>
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            <i class="bi bi-envelope-fill"></i> Correo Electrónico
+                        </label>
+                        <input type="email"
+                               class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                               id="{{ form.email.id_for_label }}"
+                               name="{{ form.email.name }}"
+                               value="{{ form.email.value|default:'' }}"
+                               placeholder="tu@correo.com"
+                               required>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">
+                            <i class="bi bi-telephone-fill"></i> Teléfono
+                        </label>
+                        <input type="text"
+                               class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                               id="{{ form.phone.id_for_label }}"
+                               name="{{ form.phone.name }}"
+                               value="{{ form.phone.value|default:'' }}"
+                               placeholder="+56912345678"
+                               required>
+                        {% if form.phone.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label">
+                            <i class="bi bi-lock-fill"></i> Contraseña
+                        </label>
+                        <input type="password"
+                               class="form-control {% if form.password1.errors %}is-invalid{% endif %}"
+                               id="{{ form.password1.id_for_label }}"
+                               name="{{ form.password1.name }}"
+                               placeholder="Mínimo 8 caracteres"
+                               required>
+                        {% if form.password1.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label">
+                            <i class="bi bi-lock-fill"></i> Confirmar Contraseña
+                        </label>
+                        <input type="password"
+                               class="form-control {% if form.password2.errors %}is-invalid{% endif %}"
+                               id="{{ form.password2.id_for_label }}"
+                               name="{{ form.password2.name }}"
+                               placeholder="Confirma tu contraseña"
+                               required>
+                        {% if form.password2.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus-fill"></i> Crear Cuenta
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center text-success">
+                    <p class="mb-0">
+                        ¿Ya tienes cuenta? 
+                        <a href="{% url 'login' %}">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
