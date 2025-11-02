@@ -1,181 +1,249 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Productos - Dulcería Lili’s{% endblock %}
+{% block title %}Listado de Productos{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Listado de Productos</h3>
+    {% if perms.production.add_product %}
+    <a href="{% url 'product_create' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> Nuevo Producto
+    </a>
+    {% endif %}
+  </div>
 
-    <!-- ENCABEZADO -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
-        <h1 class="fw-bold mb-3 mb-md-0" style="color:#c62828;">
-            <i class="bi bi-box-seam"></i> Catálogo de Productos
-        </h1>
-        <a href="{% url 'product_create' %}" class="btn shadow-sm text-white"
-           style="background-color:#c62828; border:none;">
-            <i class="bi bi-plus-circle"></i> Agregar Producto
-        </a>
+  <!-- Búsqueda y filtros -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="q" class="form-label">Buscar</label>
+          <input type="text" class="form-control" id="q" name="q" value="{{ q }}" 
+                 placeholder="Nombre, SKU, descripción...">
+        </div>
+        <div class="col-md-3">
+          <label for="sort" class="form-label">Ordenar por</label>
+          <select class="form-select" id="sort" name="sort">
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Nombre (A-Z)</option>
+            <option value="-name" {% if sort == '-name' %}selected{% endif %}>Nombre (Z-A)</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>Precio (Menor)</option>
+            <option value="-price" {% if sort == '-price' %}selected{% endif %}>Precio (Mayor)</option>
+            <option value="stock" {% if sort == 'stock' %}selected{% endif %}>Stock (Menor)</option>
+            <option value="-stock" {% if sort == '-stock' %}selected{% endif %}>Stock (Mayor)</option>
+            <option value="category__name" {% if sort == 'category__name' %}selected{% endif %}>Categoría</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="per_page" class="form-label">Elementos por página</label>
+          <select class="form-select" id="per_page" name="per_page" onchange="this.form.submit()">
+            {% for option in per_page_options %}
+            <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="card shadow-sm border-0" style="border-radius:15px;">
-        <div class="card-header border-0" 
-             style="background-color:#fff3e0; border-radius:15px 15px 0 0;">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h5 class="fw-semibold mb-0" style="color:#8b0000;">
-                        <i class="bi bi-basket"></i> Lista de Productos
-                    </h5>
-                </div>
-                <div class="col-auto">
-                    <span class="badge fs-6" 
-                          style="background-color:#f1c27d; color:#8b0000;">
-                        {{ products|length }} productos encontrados
-                    </span>
-                </div>
+  <table class="table table-hover align-middle" id="tablaProductos">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Imagen</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>SKU</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        {% if perms.production.change_product or perms.production.delete_product %}
+        <th style="width:140px">Acciones</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr id="row-{{ product.id }}">
+        <td>{{ products.start_index|add:forloop.counter0 }}</td>
+        <td>
+          {% if product.imagen %}
+            <img src="{{ product.imagen.url }}" alt="{{ product.name }}" 
+                 class="rounded" style="width:50px; height:50px; object-fit:cover;">
+          {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                 style="width:50px; height:50px;">
+              <i class="bi bi-image text-muted"></i>
             </div>
-        </div>
+          {% endif %}
+        </td>
+        <td class="product-name">
+          <strong>{{ product.name }}</strong>
+          {% if product.description %}
+            <br><small class="text-muted">{{ product.description|truncatechars:50 }}</small>
+          {% endif %}
+        </td>
+        <td>{{ product.category.name }}</td>
+        <td><code>{{ product.sku }}</code></td>
+        <td>${{ product.price|floatformat:2 }}</td>
+        <td>
+          {% if product.stock > 10 %}
+            <span class="badge bg-success">{{ product.stock }}</span>
+          {% elif product.stock > 0 %}
+            <span class="badge bg-warning text-dark">{{ product.stock }}</span>
+          {% else %}
+            <span class="badge bg-danger">{{ product.stock }}</span>
+          {% endif %}
+        </td>
+        {% if perms.production.change_product or perms.production.delete_product %}
+        <td>
+          {% if perms.production.change_product %}
+          <a href="{% url 'product_edit' product.id %}" class="btn btn-warning btn-sm">
+            <i class="bi bi-pencil"></i>
+          </a>
+          {% endif %}
+          {% if perms.production.delete_product %}
+          <button class="btn btn-danger btn-sm btn-delete"
+                  data-id="{{ product.id }}"
+                  data-url="{% url 'product_delete_ajax' product.id %}">
+            <i class="bi bi-trash"></i>
+          </button>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center">No hay productos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-        <div class="card-body bg-white">
-            {% if products %}
-                <div class="table-responsive">
-                    <table class="table align-middle table-hover">
-                        <thead style="background-color:#f1c27d; color:#8b0000;">
-                            <tr>
-                                <th>Imagen</th>
-                                <th>SKU</th>
-                                <th>Nombre</th>
-                                <th>Categoría</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for product in products %}
-                            <tr>
-                                <td>
-                                    {% if product.imagen %}
-                                        <img src="{{ product.imagen.url }}" 
-                                             alt="{{ product.name }}"
-                                             class="rounded shadow-sm border"
-                                             style="width:55px; height:55px; object-fit:cover; border-color:#f1c27d;">
-                                    {% else %}
-                                        <div class="d-flex align-items-center justify-content-center rounded bg-light" 
-                                             style="width:55px; height:55px;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
-                                    {% endif %}
-                                </td>
-                                <td><code>{{ product.sku }}</code></td>
-                                <td>
-                                    <strong style="color:#8b0000;">{{ product.name }}</strong>
-                                    {% if product.description %}
-                                        <br>
-                                        <small class="text-muted">{{ product.description|truncatechars:50 }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge" style="background-color:#ffe0b2; color:#8b0000;">
-                                        <i class="bi bi-tag"></i> {{ product.category.name }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <strong style="color:#c62828;">${{ product.price|floatformat:2 }}</strong>
-                                </td>
-                                <td>
-                                    {% if product.stock > 10 %}
-                                        <span class="badge bg-success">{{ product.stock }}</span>
-                                    {% elif product.stock > 0 %}
-                                        <span class="badge bg-warning text-dark">{{ product.stock }}</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">{{ product.stock }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if product.is_active %}
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> Activo
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-x-circle"></i> Inactivo
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{% url 'product_edit' product.pk %}" 
-                                           class="btn btn-outline-primary border-0"
-                                           style="color:#c62828;">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <a href="/admin/production/product/{{ product.id }}/" 
-                                           class="btn btn-outline-warning border-0"
-                                           style="color:#8b0000;">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox display-4 text-muted"></i>
-                    <h4 class="text-muted mt-3">No hay productos disponibles</h4>
-                    <p class="text-muted">Comienza agregando productos al catálogo</p>
-                    <a href="{% url 'product_create' %}" 
-                       class="btn text-white shadow-sm"
-                       style="background-color:#c62828;">
-                        <i class="bi bi-plus-circle"></i> Agregar Primer Producto
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    </div>
+  <!-- Paginación -->
+  {% if products.has_other_pages %}
+  <nav aria-label="Navegación de páginas">
+    <ul class="pagination justify-content-center">
+      {% if products.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">Anterior</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Anterior</span>
+      </li>
+      {% endif %}
 
-    <!-- TARJETAS INFORMATIVAS -->
-    <div class="row mt-4 g-3">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="border-radius:15px;">
-                <div class="card-header border-0" style="background-color:#fff3e0;">
-                    <h6 class="fw-semibold mb-0" style="color:#c62828;">
-                        <i class="bi bi-info-circle"></i> Información
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <p class="mb-2">
-                        Esta vista muestra todos los productos activos en el sistema. 
-                        Puedes gestionar el catálogo completo desde el panel de administración.
-                    </p>
-                    <a href="/admin/production/product/" 
-                       class="btn btn-sm text-white shadow-sm"
-                       style="background-color:#c62828;">
-                        <i class="bi bi-gear"></i> Gestionar en Admin
-                    </a>
-                </div>
-            </div>
-        </div>
+      {% for num in products.paginator.page_range %}
+        {% if products.number == num %}
+        <li class="page-item active">
+          <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endif %}
+      {% endfor %}
 
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="border-radius:15px;">
-                <div class="card-header border-0" style="background-color:#fff3e0;">
-                    <h6 class="fw-semibold mb-0" style="color:#c62828;">
-                        <i class="bi bi-shield-check"></i> Organización
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <p class="mb-2">
-                        <strong>Organización actual:</strong> {{ user_org.name }}<br>
-                        <strong>Usuario:</strong> {{ user.username }}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
+      {% if products.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">Siguiente</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Siguiente</span>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  <div class="text-center text-muted">
+    Mostrando {{ products.start_index }} - {{ products.end_index }} de {{ products.paginator.count }} productos
+  </div>
+  {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// --- CSRF helper (lee la cookie csrftoken) ---
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Delegación de eventos para botones borrar
+document.addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('.btn-delete');
+  if (!btn) return;
+
+  const row = btn.closest('tr');
+  const productId = btn.dataset.id;
+  const url = btn.dataset.url;
+  const nombre = row.querySelector('.product-name')?.textContent?.trim() || 'el producto';
+
+  const confirm = await Swal.fire({
+    title: `¿Eliminar ${nombre}?`,
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#dc3545"
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(txt || 'Error HTTP');
+    }
+
+    const data = await resp.json();
+
+    if (data.ok) {
+      // Quitar la fila del DOM
+      row.remove();
+      // Reindexar primera columna (#)
+      Array.from(document.querySelectorAll('#tablaProductos tbody tr')).forEach((tr, i) => {
+        tr.children[0].textContent = (i + 1).toString();
+      });
+      Swal.fire({ 
+        icon: "success", 
+        title: data.message, 
+        timer: 1800, 
+        showConfirmButton: false 
+      });
+    } else {
+      Swal.fire({ 
+        icon: "error", 
+        title: data.message || "No se pudo eliminar" 
+      });
+    }
+  } catch (err) {
+    Swal.fire({ 
+      icon: "error", 
+      title: "Error al eliminar", 
+      text: err.message 
+    });
+  }
+});
+</script>
 {% endblock %}

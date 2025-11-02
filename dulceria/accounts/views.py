@@ -18,22 +18,55 @@ class CustomLoginView(LoginView):
     def get_success_url(self):
         # Redirigir según el rol del usuario
         user = self.request.user
+        
         if hasattr(user, 'userprofile'):
             role = user.userprofile.role
             if role == 'admin':
-                return reverse_lazy('dashboard')  # Admin también ve el dashboard
-            elif role == 'manager':
+                # Regenerar clave de sesión tras login para mayor seguridad
+                self.request.session.cycle_key()
                 return reverse_lazy('dashboard')
+            elif role == 'manager':
+                self.request.session.cycle_key()
+                return reverse_lazy('dashboard')
+            elif role == 'cliente':
+                self.request.session.cycle_key()
+                return reverse_lazy('tienda_online')
             else:  # employee o viewer
+                self.request.session.cycle_key()
                 return reverse_lazy('products_list')
         elif hasattr(user, 'cliente'):
-            # Si es un cliente, redirigir a página de productos
-            return reverse_lazy('products_list')
+            # Si es un cliente, redirigir a tienda online
+            self.request.session.cycle_key()
+            return reverse_lazy('tienda_online')
+        
         return reverse_lazy('dashboard')
 
 
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('login')
+
+
+def logout_view(request):
+    """Vista de logout personalizada que limpia datos de sesión"""
+    # 1) Limpiar datos específicos de la sesión
+    for key in ("carrito", "filtros_busqueda", "onboarding_step"):
+        request.session.pop(key, None)
+    
+    # 2) Borrar cookies propias si las usaste
+    response = redirect("login")
+    # response.delete_cookie("remember_section", samesite="Lax")  # si la definiste antes
+    
+    # 3) Ahora cerrar sesión
+    from django.contrib.auth import logout
+    logout(request)
+    
+    # Importante: agrega el mensaje DESPUÉS de logout (se crea una nueva sesión vacía)
+    messages.info(request, "Sesión cerrada y datos temporales limpiados.")
+    
+    # Regenerar clave de sesión para mayor seguridad
+    request.session.cycle_key()
+    
+    return response
 
 
 @login_required
@@ -58,29 +91,24 @@ def dashboard(request):
     # Admin puede ver todo
     if role == 'admin':
         from production.models import Product, Category
-        from organizations.models import Device
-        from production.models import Measurement
+        from organizations.models import Organization, Zone
         
         context.update({
             'total_products': Product.objects.filter(is_active=True).count(),
             'total_categories': Category.objects.count(),
-            'total_devices': Device.objects.count(),
-            'recent_measurements': Measurement.objects.select_related('device', 'device__zone')[:10],
+            'total_organizations': Organization.objects.count(),
+            'total_zones': Zone.objects.count(),
         })
     
-    # Gerente puede ver productos y dispositivos de su organización
+    # Gerente puede ver productos y zonas de su organización
     elif role == 'manager':
         from production.models import Product, Category
-        from organizations.models import Device
-        from production.models import Measurement
+        from organizations.models import Zone
         
         context.update({
             'total_products': Product.objects.filter(is_active=True).count(),
             'total_categories': Category.objects.count(),
-            'total_devices': Device.objects.filter(zone__organization=user_org).count(),
-            'recent_measurements': Measurement.objects.filter(
-                device__zone__organization=user_org
-            ).select_related('device', 'device__zone')[:10],
+            'total_zones': Zone.objects.filter(organization=user_org).count(),
         })
     
     # Empleado solo puede ver productos

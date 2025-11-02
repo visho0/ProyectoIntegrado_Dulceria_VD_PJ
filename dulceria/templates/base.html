@@ -19,31 +19,58 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard' %}">
-                                <i class="bi bi-house"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'products_list' %}">
-                                <i class="bi bi-box"></i> Productos
-                            </a>
-                        </li>
+                        {% if user.userprofile.role == 'cliente' or user.cliente %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'tienda_online' %}active{% endif %}" href="{% url 'tienda_online' %}">
+                                    <i class="bi bi-shop"></i> Tienda Online
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                    <i class="bi bi-house"></i> Dashboard
+                                </a>
+                            </li>
+                            {% if perms.production.view_product %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'products_list' %}active{% endif %}" href="{% url 'products_list' %}">
+                                    <i class="bi bi-box"></i> Productos
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
+                        {% if user.userprofile.role == 'cliente' or user.cliente %}
+                            <!-- Carrito para clientes -->
+                            <li class="nav-item">
+                                <a class="nav-link position-relative" href="{% url 'view_cart' %}">
+                                    <i class="bi bi-cart"></i> Carrito
+                                    {% if request.session.carrito %}
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                            {{ request.session.carrito|length }}
+                                        </span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle"></i> {{ user.username }}
                             </a>
                             <ul class="dropdown-menu">
+                                {% if user.userprofile.role != 'cliente' and not user.cliente %}
                                 <li><a class="dropdown-item" href="{% url 'profile' %}">
                                     <i class="bi bi-person"></i> Mi Perfil
                                 </a></li>
+                                {% if user.is_staff %}
                                 <li><a class="dropdown-item" href="/admin/">
                                     <i class="bi bi-gear"></i> Administración
                                 </a></li>
+                                {% endif %}
+                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{% url 'logout' %}" method="post" class="d-inline">
@@ -59,6 +86,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'login' %}">
                                 <i class="bi bi-box-arrow-in-right"></i> Entrar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register_cliente' %}">
+                                <i class="bi bi-person-plus"></i> Registrarse
                             </a>
                         </li>
                     {% endif %}
@@ -90,5 +122,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}
+    {% endblock %}
 </body>
 </html>

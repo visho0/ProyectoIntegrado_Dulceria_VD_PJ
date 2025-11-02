@@ -32,6 +32,11 @@ class Product(models.Model):
         verbose_name = 'Producto'
         verbose_name_plural = 'Productos'
         ordering = ['name']
+        # Nota: Django crea automáticamente los permisos:
+        # - production.add_product
+        # - production.change_product
+        # - production.delete_product
+        # - production.view_product
 
     def __str__(self):
         return f"{self.name} ({self.sku})"

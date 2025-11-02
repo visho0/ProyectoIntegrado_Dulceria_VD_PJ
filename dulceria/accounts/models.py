@@ -53,6 +53,7 @@ class UserProfile(models.Model):
         ('manager', 'Gerente'),
         ('employee', 'Empleado'),
         ('viewer', 'Visualizador'),
+        ('cliente', 'Cliente'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Usuario')

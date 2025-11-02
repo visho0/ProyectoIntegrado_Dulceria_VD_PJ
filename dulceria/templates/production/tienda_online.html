@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lili's - Tienda Online{% endblock %}
+
+{% block content %}
+<!-- Header de la tienda -->
+<div class="bg-white">
+  <div class="container py-4">
+    <h2 class="text-center mb-2" style="color: #d4a574;">PRODUCTOS NUEVOS</h2>
+    <p class="text-center text-muted">Nuestras últimas creaciones</p>
+  </div>
+</div>
+
+<div class="container my-4">
+  <!-- Búsqueda y filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="q" class="form-label">Buscar productos</label>
+          <input type="text" class="form-control" id="q" name="q" value="{{ q }}" 
+                 placeholder="Nombre, descripción...">
+        </div>
+        <div class="col-md-3">
+          <label for="categoria" class="form-label">Categoría</label>
+          <select class="form-select" id="categoria" name="categoria">
+            <option value="">Todas las categorías</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if categoria_id == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="sort" class="form-label">Ordenar por</label>
+          <select class="form-select" id="sort" name="sort">
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Nombre (A-Z)</option>
+            <option value="-name" {% if sort == '-name' %}selected{% endif %}>Nombre (Z-A)</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>Precio (Menor)</option>
+            <option value="-price" {% if sort == '-price' %}selected{% endif %}>Precio (Mayor)</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-danger w-100">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Grid de productos -->
+  <div class="row g-4">
+    {% for product in products %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 shadow-sm border-0" style="border-radius: 10px; overflow: hidden;">
+        <div class="position-relative" style="height: 250px; overflow: hidden;">
+          {% if product.imagen %}
+            <img src="{{ product.imagen.url }}" class="card-img-top" 
+                 alt="{{ product.name }}" style="object-fit: cover; height: 100%; width: 100%;">
+          {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 100%;">
+              <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title" style="color: #8b0000;">{{ product.name }}</h5>
+          {% if product.description %}
+            <p class="card-text text-muted small">{{ product.description|truncatechars:100 }}</p>
+          {% endif %}
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="h5 mb-0" style="color: #c62828;">${{ product.price|floatformat:0 }}</span>
+              {% if product.stock > 0 %}
+                <span class="badge bg-success">Disponible</span>
+              {% else %}
+                <span class="badge bg-danger">Sin stock</span>
+              {% endif %}
+            </div>
+            {% if product.stock > 0 %}
+              <form method="post" action="{% url 'add_to_cart' product.id %}" class="w-100">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger w-100" style="background-color: #c70606;">
+                  <i class="bi bi-cart-plus"></i> Añadir al Carrito
+                </button>
+              </form>
+            {% else %}
+              <button class="btn btn-secondary w-100" disabled>
+                <i class="bi bi-x-circle"></i> Sin Stock
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center py-5">
+        <i class="bi bi-inbox display-4 text-muted"></i>
+        <h4 class="text-muted mt-3">No se encontraron productos</h4>
+        <p class="text-muted">Intenta con otros términos de búsqueda</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginación -->
+  {% if products.has_other_pages %}
+  <nav aria-label="Navegación de páginas" class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if products.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">Anterior</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Anterior</span>
+      </li>
+      {% endif %}
+
+      {% for num in products.paginator.page_range %}
+        {% if products.number == num %}
+        <li class="page-item active">
+          <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if products.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">Siguiente</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Siguiente</span>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  <div class="text-center text-muted mb-4">
+    Mostrando {{ products.start_index }} - {{ products.end_index }} de {{ products.paginator.count }} productos
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

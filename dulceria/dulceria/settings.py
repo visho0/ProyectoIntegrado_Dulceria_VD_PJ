@@ -12,21 +12,30 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ffls55cx*ryq+%icp^ltj10s+4jv#jxc-4ilr8urcsi$dg0ds9'
+# La SECRET_KEY se carga desde el archivo .env
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ffls55cx*ryq+%icp^ltj10s+4jv#jxc-4ilr8urcsi$dg0ds9')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG se carga desde el archivo .env (True para desarrollo, False para producción)
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS se carga desde el archivo .env
+# Si está vacío, se usa una lista vacía, si tiene valores, se separan por comas
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()] if allowed_hosts_str else []
 
 
 # Application definition
@@ -75,30 +84,18 @@ WSGI_APPLICATION = 'dulceria.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# La configuración de la base de datos se carga desde el archivo .env
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dulceria_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME', 'dulceria_db'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
-
-
-# Configuración para MySQL (comentada, descomenta si quieres usar MySQL)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': os.getenv('DB_NAME', 'dulceria_db'),
-#         'USER': os.getenv('DB_USER', 'root'),
-#         'PASSWORD': os.getenv('DB_PASSWORD', ''),
-#         'HOST': os.getenv('DB_HOST', 'localhost'),
-#         'PORT': os.getenv('DB_PORT', '3306'),
-#     }
-# }
 
 
 # Password validation
@@ -122,10 +119,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
+# Idioma y zona horaria se cargan desde el archivo .env
 
-LANGUAGE_CODE = 'es-es'
+LANGUAGE_CODE = os.getenv('LANGUAGE_CODE', 'es-es')
 
-TIME_ZONE = 'America/Mexico_City'
+TIME_ZONE = os.getenv('TIME_ZONE', 'America/Mexico_City')
 
 USE_I18N = True
 
@@ -147,6 +145,41 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
+
+# ===========================================
+# CONFIGURACIÓN DE SESIONES
+# ===========================================
+
+# Duración de la cookie de sesión (en segundos) - 2 horas
+SESSION_COOKIE_AGE = 60 * 60 * 2  # 2 horas
+
+# Sesión expira al cerrar el navegador?
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Cada vez que se hace una petición, se actualiza la expiración
+SESSION_SAVE_EVERY_REQUEST = False
+
+# Seguridad de las cookies
+# En desarrollo: False, en producción con HTTPS: True
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+
+# Solo enviar la cookie en el mismo sitio (protección CSRF)
+# Lax por defecto en Django
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')  # 'Lax', 'Strict', o 'None' (+Secure)
+
+# ===========================================
+# CONFIGURACIÓN DE MENSAJES (MESSAGE FRAMEWORK)
+# ===========================================
+
+from django.contrib.messages import constants as msg
+
+MESSAGE_TAGS = {
+    msg.DEBUG: 'secondary',
+    msg.INFO: 'info',
+    msg.SUCCESS: 'success',
+    msg.WARNING: 'warning',
+    msg.ERROR: 'danger',  # Bootstrap usa 'danger'
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
