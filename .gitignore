@@ -45,6 +45,11 @@ static_root/
 # Configuración local (si tienes settings locales)
 # local_settings.py
 
+# Archivo de variables de entorno (contiene información sensible)
+.env
+.env.local
+.env.*.local
+
 # Coverage reports
 htmlcov/
 .coverage
