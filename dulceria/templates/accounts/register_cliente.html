@@ -84,7 +84,19 @@
                 <div class="text-center mb-4">
                     <img src="{% static 'img/LOGO-Lilis-rojo.png' %}" alt="Logo Dulcería" width="90" class="mb-2">
                     <h2 class="register-title mb-0">Crear Cuenta</h2>
-                    <p class="text-muted">Registro para clientes</p>
+                    <p class="text-muted">Selecciona el tipo de cuenta</p>
+                </div>
+
+                <!-- Selector de tipo de registro -->
+                <div class="mb-4">
+                    <div class="btn-group w-100" role="group">
+                        <a href="?tipo=cliente" class="btn {% if tipo_registro == 'cliente' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="bi bi-person"></i> Cliente
+                        </a>
+                        <a href="?tipo=proveedor" class="btn {% if tipo_registro == 'proveedor' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="bi bi-truck"></i> Proveedor
+                        </a>
+                    </div>
                 </div>
 
                 {% if form.errors %}
@@ -102,93 +114,185 @@
 
                 <form method="post">
                     {% csrf_token %}
+                    <input type="hidden" name="tipo_registro" value="{{ tipo_registro }}">
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.rut.id_for_label }}" class="form-label">
-                                    <i class="bi bi-card-heading"></i> RUT
-                                </label>
-                                <input type="text"
-                                       class="form-control {% if form.rut.errors %}is-invalid{% endif %}"
-                                       id="{{ form.rut.id_for_label }}"
-                                       name="{{ form.rut.name }}"
-                                       value="{{ form.rut.value|default:'' }}"
-                                       placeholder="12345678-9"
-                                       required>
-                                {% if form.rut.help_text %}
-                                    <div class="help-text">{{ form.rut.help_text }}</div>
-                                {% endif %}
-                                {% if form.rut.errors %}
-                                    <div class="invalid-feedback">
-                                        {% for error in form.rut.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
+                    {% if tipo_registro == 'proveedor' %}
+                        <!-- Campos para Proveedor -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.rut.id_for_label }}" class="form-label">
+                                        <i class="bi bi-card-heading"></i> RUT
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.rut.errors %}is-invalid{% endif %}"
+                                           id="{{ form.rut.id_for_label }}"
+                                           name="{{ form.rut.name }}"
+                                           value="{{ form.rut.value|default:'' }}"
+                                           placeholder="12345678-9"
+                                           maxlength="12"
+                                           required>
+                                    {% if form.rut.help_text %}
+                                        <div class="help-text">{{ form.rut.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.rut.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.rut.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person-fill"></i> Usuario
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                           id="{{ form.username.id_for_label }}"
+                                           name="{{ form.username.name }}"
+                                           value="{{ form.username.value|default:'' }}"
+                                           placeholder="Nombre de usuario"
+                                           maxlength="150"
+                                           required>
+                                    {% if form.username.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person-fill"></i> Usuario
-                                </label>
-                                <input type="text"
-                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}"
-                                       id="{{ form.username.id_for_label }}"
-                                       name="{{ form.username.name }}"
-                                       value="{{ form.username.value|default:'' }}"
-                                       placeholder="Nombre de usuario"
-                                       required>
-                                {% if form.username.errors %}
-                                    <div class="invalid-feedback">
-                                        {% for error in form.username.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person"></i> Nombre
-                                </label>
-                                <input type="text"
-                                       class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
-                                       id="{{ form.first_name.id_for_label }}"
-                                       name="{{ form.first_name.name }}"
-                                       value="{{ form.first_name.value|default:'' }}"
-                                       placeholder="Tu nombre"
-                                       required>
-                                {% if form.first_name.errors %}
-                                    <div class="invalid-feedback">
-                                        {% for error in form.first_name.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
+                        <div class="mb-3">
+                            <label for="{{ form.razon_social.id_for_label }}" class="form-label">
+                                <i class="bi bi-building"></i> Razón Social
+                            </label>
+                            <input type="text"
+                                   class="form-control {% if form.razon_social.errors %}is-invalid{% endif %}"
+                                   id="{{ form.razon_social.id_for_label }}"
+                                   name="{{ form.razon_social.name }}"
+                                   value="{{ form.razon_social.value|default:'' }}"
+                                   placeholder="Razón Social"
+                                   maxlength="200"
+                                   required>
+                            {% if form.razon_social.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.razon_social.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person"></i> Apellido
-                                </label>
-                                <input type="text"
-                                       class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
-                                       id="{{ form.last_name.id_for_label }}"
-                                       name="{{ form.last_name.name }}"
-                                       value="{{ form.last_name.value|default:'' }}"
-                                       placeholder="Tu apellido"
-                                       required>
-                                {% if form.last_name.errors %}
-                                    <div class="invalid-feedback">
-                                        {% for error in form.last_name.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
+                        <div class="mb-3">
+                            <label for="{{ form.nombre_fantasia.id_for_label }}" class="form-label">
+                                <i class="bi bi-shop"></i> Nombre de Fantasía (Opcional)
+                            </label>
+                            <input type="text"
+                                   class="form-control {% if form.nombre_fantasia.errors %}is-invalid{% endif %}"
+                                   id="{{ form.nombre_fantasia.id_for_label }}"
+                                   name="{{ form.nombre_fantasia.name }}"
+                                   value="{{ form.nombre_fantasia.value|default:'' }}"
+                                   placeholder="Nombre de Fantasía"
+                                   maxlength="200">
+                            {% if form.nombre_fantasia.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nombre_fantasia.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <!-- Campos para Cliente -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.rut.id_for_label }}" class="form-label">
+                                        <i class="bi bi-card-heading"></i> RUT
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.rut.errors %}is-invalid{% endif %}"
+                                           id="{{ form.rut.id_for_label }}"
+                                           name="{{ form.rut.name }}"
+                                           value="{{ form.rut.value|default:'' }}"
+                                           placeholder="12345678-9"
+                                           maxlength="12"
+                                           required>
+                                    {% if form.rut.help_text %}
+                                        <div class="help-text">{{ form.rut.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.rut.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.rut.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person-fill"></i> Usuario
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                           id="{{ form.username.id_for_label }}"
+                                           name="{{ form.username.name }}"
+                                           value="{{ form.username.value|default:'' }}"
+                                           placeholder="Nombre de usuario"
+                                           maxlength="150"
+                                           required>
+                                    {% if form.username.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person"></i> Nombre
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                           id="{{ form.first_name.id_for_label }}"
+                                           name="{{ form.first_name.name }}"
+                                           value="{{ form.first_name.value|default:'' }}"
+                                           placeholder="Tu nombre"
+                                           maxlength="150"
+                                           required>
+                                    {% if form.first_name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person"></i> Apellido
+                                    </label>
+                                    <input type="text"
+                                           class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                           id="{{ form.last_name.id_for_label }}"
+                                           name="{{ form.last_name.name }}"
+                                           value="{{ form.last_name.value|default:'' }}"
+                                           placeholder="Tu apellido"
+                                           maxlength="150"
+                                           required>
+                                    {% if form.last_name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
 
                     <div class="mb-3">
                         <label for="{{ form.email.id_for_label }}" class="form-label">
@@ -199,7 +303,8 @@
                                id="{{ form.email.id_for_label }}"
                                name="{{ form.email.name }}"
                                value="{{ form.email.value|default:'' }}"
-                               placeholder="tu@correo.com"
+                               placeholder="{% if tipo_registro == 'proveedor' %}contacto@empresa.com{% else %}tu@correo.com{% endif %}"
+                               maxlength="254"
                                required>
                         {% if form.email.errors %}
                             <div class="invalid-feedback">
@@ -218,6 +323,7 @@
                                name="{{ form.phone.name }}"
                                value="{{ form.phone.value|default:'' }}"
                                placeholder="+56912345678"
+                               maxlength="20"
                                required>
                         {% if form.phone.errors %}
                             <div class="invalid-feedback">

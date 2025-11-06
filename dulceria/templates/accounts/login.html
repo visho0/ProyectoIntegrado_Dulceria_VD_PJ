@@ -141,6 +141,15 @@
                             <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
                         </button>
                     </div>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="{{ form.remember_me.id_for_label }}" name="{{ form.remember_me.name }}" {% if form.remember_me.value %}checked{% endif %}>
+                        <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">
+                            <i class="bi bi-clock-history"></i> Recordarme
+                        </label>
+                        {% if form.remember_me.errors %}
+                            <div class="text-danger small">{{ form.remember_me.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
                 </form>
 
                 <hr class="divider my-4">

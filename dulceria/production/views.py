@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST, require_http_methods
@@ -219,6 +219,30 @@ def product_delete_ajax(request, pk):
 
 
 # ===========================================
+# CATEGORÍAS
+# ===========================================
+
+
+@login_required
+def categories_overview(request):
+    """Vista de categorías con productos asociados en formato acordeón"""
+    role = get_user_role(request)
+    categories = Category.objects.all().prefetch_related(
+        Prefetch(
+            'product_set',
+            queryset=Product.objects.filter(is_active=True).order_by('name'),
+            to_attr='active_products'
+        )
+    )
+
+    context = {
+        'categories': categories,
+        'user_role': role,
+    }
+    return render(request, "production/categories.html", context)
+
+
+# ===========================================
 # VISTAS PARA CLIENTES (TIENDA ONLINE)
 # ===========================================
 
@@ -397,3 +421,17 @@ def update_cart_quantity(request, product_id):
         messages.success(request, f'Cantidad de "{product.name}" actualizada.')
     
     return redirect('view_cart')
+
+
+@login_required
+def admin_panel(request):
+    """Vista de administración de Django integrada en la página"""
+    role = get_user_role(request)
+    
+    # Solo admin y gerente pueden acceder
+    if not (request.user.is_staff or role in ['admin', 'manager']):
+        messages.error(request, 'No tienes permiso para acceder a la administración.')
+        return redirect('dashboard')
+    
+    # Redirigir al admin de Django
+    return redirect('/admin/')

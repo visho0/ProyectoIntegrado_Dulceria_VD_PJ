@@ -7,6 +7,7 @@ urlpatterns = [
     path("products/create/", views.product_create, name="product_create"),
     path("products/edit/<int:pk>/", views.product_edit, name="product_edit"),
     path("products/delete/<int:pk>/", views.product_delete_ajax, name="product_delete_ajax"),
+    path("categories/", views.categories_overview, name="categories_overview"),
     
     # Tienda online (clientes)
     path("tienda/", views.tienda_online, name="tienda_online"),
@@ -14,4 +15,7 @@ urlpatterns = [
     path("carrito/", views.view_cart, name="view_cart"),
     path("carrito/remove/<int:product_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("carrito/update/<int:product_id>/", views.update_cart_quantity, name="update_cart_quantity"),
+    
+    # Administración integrada
+    path("admin-panel/", views.admin_panel, name="admin_panel"),
 ]

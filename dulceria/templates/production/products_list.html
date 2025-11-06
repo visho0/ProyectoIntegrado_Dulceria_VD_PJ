@@ -90,7 +90,7 @@
         </td>
         <td>{{ product.category.name }}</td>
         <td><code>{{ product.sku }}</code></td>
-        <td>${{ product.price|floatformat:2 }}</td>
+        <td>${{ product.price|floatformat:0 }} CLP</td>
         <td>
           {% if product.stock > 10 %}
             <span class="badge bg-success">{{ product.stock }}</span>

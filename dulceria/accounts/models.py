@@ -54,11 +54,22 @@ class UserProfile(models.Model):
         ('employee', 'Empleado'),
         ('viewer', 'Visualizador'),
         ('cliente', 'Cliente'),
+        ('proveedor', 'Proveedor'),
+    ]
+    STATE_CHOICES = [
+        ('ACTIVO', 'Activo'),
+        ('BLOQUEADO', 'Bloqueado'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Usuario')
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='employee', verbose_name='Rol')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Teléfono')
+    avatar = models.ImageField(upload_to='perfiles/', blank=True, null=True, verbose_name='Foto de perfil')
+    state = models.CharField(max_length=20, choices=STATE_CHOICES, default='ACTIVO', verbose_name='Estado')
+    mfa_enabled = models.BooleanField(default=False, verbose_name='MFA habilitado')
+    sesiones_activas = models.PositiveIntegerField(default=0, verbose_name='Sesiones activas')
+    area = models.CharField(max_length=120, blank=True, verbose_name='Área/Unidad')
+    observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
     organization = models.ForeignKey('organizations.Organization', on_delete=models.PROTECT, verbose_name='Organización')
@@ -70,6 +81,13 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
+
+    @property
+    def avatar_url(self):
+        """Retorna la URL del avatar o None si no existe."""
+        if self.avatar:
+            return self.avatar.url
+        return None
 
 
 class Cliente(models.Model):
@@ -90,3 +108,23 @@ class Cliente(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.rut})"
+
+
+class ProveedorUser(models.Model):
+    """Modelo para usuarios proveedores de la dulcería"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Usuario')
+    rut = models.CharField(max_length=12, validators=[validate_rut_chileno], verbose_name='RUT', help_text='Formato: 12345678-9')
+    razon_social = models.CharField(max_length=200, verbose_name='Razón Social')
+    nombre_fantasia = models.CharField(max_length=200, blank=True, verbose_name='Nombre de Fantasía')
+    email = models.EmailField(verbose_name='Correo Electrónico')
+    phone = models.CharField(max_length=20, verbose_name='Teléfono')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de registro')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
+
+    class Meta:
+        verbose_name = 'Proveedor Usuario'
+        verbose_name_plural = 'Proveedores Usuarios'
+        ordering = ['razon_social']
+
+    def __str__(self):
+        return f"{self.razon_social} ({self.rut})"
