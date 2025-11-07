@@ -43,6 +43,27 @@
                                 </a>
                             </li>
                             {% endif %}
+                            {% if user.userprofile.role == 'proveedor' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'proveedor_dashboard' %}active{% endif %}" href="{% url 'proveedor_dashboard' %}">
+                                    <i class="bi bi-truck"></i> Mi Dashboard
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if user.userprofile.role == 'manager' or user.userprofile.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'aprobar_productos' %}active{% endif %}" href="{% url 'aprobar_productos' %}">
+                                    <i class="bi bi-check-circle"></i> Aprobar Productos
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if user.userprofile.role == 'admin' or user.userprofile.role == 'manager' or user.userprofile.role == 'employee' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'inventory_dashboard' or request.resolver_match.url_name == 'movimientos_list' %}active{% endif %}" href="{% url 'inventory_dashboard' %}">
+                                    <i class="bi bi-arrow-left-right"></i> Inventario
+                                </a>
+                            </li>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </ul>

@@ -74,6 +74,7 @@ class ProductForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        user_role = kwargs.pop('user_role', None)
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         # Campo SKU solo informativo
@@ -87,6 +88,14 @@ class ProductForm(forms.ModelForm):
             self.fields['sku'].initial = instance.sku
         else:
             self.fields['sku'].initial = 'Se generará automáticamente'
+        
+        # Si es proveedor, ocultar campos que no puede editar
+        if user_role == 'proveedor':
+            # Ocultar campos que solo el gerente puede modificar
+            if 'is_active' in self.fields:
+                del self.fields['is_active']
+            if 'estado_aprobacion' in self.fields:
+                del self.fields['estado_aprobacion']
     
     def clean(self):
         cleaned_data = super().clean()
@@ -118,8 +127,6 @@ class ProductForm(forms.ModelForm):
         stock_maximo = cleaned_data.get('stock_maximo')
         if stock_maximo is not None and stock_maximo < stock_minimo:
             raise forms.ValidationError({'stock_maximo': 'El stock máximo no puede ser menor al stock mínimo.'})
-        
-        return cleaned_data
         
         return cleaned_data
 

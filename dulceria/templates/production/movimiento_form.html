@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ action }} Movimiento - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .btn-outline-primary {
+        color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+        color: white;
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--lilis-red);
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: var(--lilis-red);
+        color: white;
+        border-color: var(--lilis-red);
+    }
+
+    .form-control:focus {
+        border-color: var(--lilis-red);
+        box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.25);
+    }
+</style>
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-{% if action == 'Registrar' %}plus-circle{% else %}pencil{% endif %}"></i> {{ action }} Movimiento</h2>
+        <a href="{% url 'movimientos_list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> Volver a la Lista
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="movimientoForm">
+                {% csrf_token %}
+                
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="movimientoTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="datos-tab" data-bs-toggle="tab" data-bs-target="#datos" type="button" role="tab">
+                            1. Datos del Movimiento
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="control-tab" data-bs-toggle="tab" data-bs-target="#control" type="button" role="tab">
+                            2. Control Avanzado
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="referencias-tab" data-bs-toggle="tab" data-bs-target="#referencias" type="button" role="tab">
+                            3. Referencias/Observaciones
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="movimientoTabContent">
+                    <!-- Tab 1: Datos del Movimiento -->
+                    <div class="tab-pane fade show active" id="datos" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                    {{ form.fecha.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}
+                                    <div class="text-danger small">{{ form.fecha.errors }}</div>
+                                {% endif %}
+                                {% if action == 'Editar' %}
+                                    <input type="hidden" name="fecha" value="{{ movimiento.fecha|date:'Y-m-d\TH:i' }}">
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                    {{ form.tipo.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.producto.id_for_label }}" class="form-label">
+                                    {{ form.producto.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.producto }}
+                                {% if form.producto.errors %}
+                                    <div class="text-danger small">{{ form.producto.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.proveedor.id_for_label }}" class="form-label">
+                                    {{ form.proveedor.label }}
+                                </label>
+                                {{ form.proveedor }}
+                                {% if form.proveedor.errors %}
+                                    <div class="text-danger small">{{ form.proveedor.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Opcional. Requerido para movimientos de ingreso.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.bodega.id_for_label }}" class="form-label">
+                                    {{ form.bodega.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.bodega }}
+                                {% if form.bodega.errors %}
+                                    <div class="text-danger small">{{ form.bodega.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.cantidad.id_for_label }}" class="form-label">
+                                    {{ form.cantidad.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.cantidad }}
+                                {% if form.cantidad.errors %}
+                                    <div class="text-danger small">{{ form.cantidad.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Control Avanzado -->
+                    <div class="tab-pane fade" id="control" role="tabpanel">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Las banderas (lote/serie/vencimiento) normalmente vienen desde la ficha del producto; aquí se permiten por demo.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkLote" onchange="toggleLote()">
+                                    <label class="form-check-label" for="checkLote">
+                                        Manejo por Lotes
+                                    </label>
+                                </div>
+                                <label for="{{ form.lote.id_for_label }}" class="form-label">{{ form.lote.label }}</label>
+                                {{ form.lote }}
+                                {% if form.lote.errors %}
+                                    <div class="text-danger small">{{ form.lote.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkSerie" onchange="toggleSerie()">
+                                    <label class="form-check-label" for="checkSerie">
+                                        Manejo por Series
+                                    </label>
+                                </div>
+                                <label for="{{ form.serie.id_for_label }}" class="form-label">{{ form.serie.label }}</label>
+                                {{ form.serie }}
+                                {% if form.serie.errors %}
+                                    <div class="text-danger small">{{ form.serie.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkVencimiento" onchange="toggleVencimiento()">
+                                    <label class="form-check-label" for="checkVencimiento">
+                                        Perecible (Vencimiento)
+                                    </label>
+                                </div>
+                                <label for="{{ form.fecha_vencimiento.id_for_label }}" class="form-label">{{ form.fecha_vencimiento.label }}</label>
+                                {{ form.fecha_vencimiento }}
+                                {% if form.fecha_vencimiento.errors %}
+                                    <div class="text-danger small">{{ form.fecha_vencimiento.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Referencias/Observaciones -->
+                    <div class="tab-pane fade" id="referencias" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.doc_referencia.id_for_label }}" class="form-label">{{ form.doc_referencia.label }}</label>
+                                {{ form.doc_referencia }}
+                                {% if form.doc_referencia.help_text %}
+                                    <small class="form-text text-muted">{{ form.doc_referencia.help_text }}</small>
+                                {% endif %}
+                                {% if form.doc_referencia.errors %}
+                                    <div class="text-danger small">{{ form.doc_referencia.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.observaciones.id_for_label }}" class="form-label">{{ form.observaciones.label }}</label>
+                                {{ form.observaciones }}
+                                {% if form.observaciones.help_text %}
+                                    <small class="form-text text-muted">{{ form.observaciones.help_text }}</small>
+                                {% endif %}
+                                {% if form.observaciones.errors %}
+                                    <div class="text-danger small">{{ form.observaciones.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.motivo.id_for_label }}" class="form-label">{{ form.motivo.label }}</label>
+                                {{ form.motivo }}
+                                {% if form.motivo.help_text %}
+                                    <small class="form-text text-muted">{{ form.motivo.help_text }}</small>
+                                {% endif %}
+                                {% if form.motivo.errors %}
+                                    <div class="text-danger small">{{ form.motivo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'movimientos_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar Movimiento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleLote() {
+    const check = document.getElementById('checkLote');
+    const input = document.getElementById('{{ form.lote.id_for_label }}');
+    input.disabled = !check.checked;
+    if (!check.checked) input.value = '';
+}
+
+function toggleSerie() {
+    const check = document.getElementById('checkSerie');
+    const input = document.getElementById('{{ form.serie.id_for_label }}');
+    input.disabled = !check.checked;
+    if (!check.checked) input.value = '';
+}
+
+function toggleVencimiento() {
+    const check = document.getElementById('checkVencimiento');
+    const input = document.getElementById('{{ form.fecha_vencimiento.id_for_label }}');
+    input.disabled = !check.checked;
+    if (!check.checked) input.value = '';
+}
+
+// Inicializar campos según valores existentes
+document.addEventListener('DOMContentLoaded', function() {
+    const loteValue = document.getElementById('{{ form.lote.id_for_label }}').value;
+    const serieValue = document.getElementById('{{ form.serie.id_for_label }}').value;
+    const vencimientoValue = document.getElementById('{{ form.fecha_vencimiento.id_for_label }}').value;
+    
+    if (loteValue) document.getElementById('checkLote').checked = true;
+    else toggleLote();
+    
+    if (serieValue) document.getElementById('checkSerie').checked = true;
+    else toggleSerie();
+    
+    if (vencimientoValue) document.getElementById('checkVencimiento').checked = true;
+    else toggleVencimiento();
+});
+</script>
+{% endblock %}
+

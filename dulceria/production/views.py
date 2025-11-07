@@ -94,8 +94,19 @@ def products_list(request):
     q = request.GET.get('q', '')
     sort = request.GET.get('sort', 'name')
     
-    # Obtener productos
-    products = Product.objects.select_related('category').filter(is_active=True)
+    # Obtener productos según el rol
+    if role == 'proveedor':
+        # Proveedores solo ven sus productos
+        products = Product.objects.select_related('category').filter(
+            is_active=True,
+            creado_por=request.user
+        )
+    else:
+        # Admin, manager y empleados ven todos los productos aprobados
+        products = Product.objects.select_related('category').filter(
+            is_active=True,
+            estado_aprobacion='APROBADO'
+        )
     
     # Aplicar búsqueda
     if q:
@@ -141,21 +152,32 @@ def products_list(request):
 @login_required
 def product_create(request):
     """Crear nuevo producto"""
+    role = get_user_role(request)
+    
     # Verificar permiso solo si está asignado, sino permitir acceso
     if not (request.user.is_staff or request.user.has_perm('production.add_product')):
         # Si no tiene permiso explícito pero es staff o tiene perfil, permitir acceso
-        if not (hasattr(request.user, 'userprofile') and get_user_role(request) in ['admin', 'manager', 'employee']):
+        if not (hasattr(request.user, 'userprofile') and role in ['admin', 'manager', 'employee', 'proveedor']):
             messages.error(request, 'No tienes permiso para agregar productos.')
             return redirect('products_list')
     
     if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)
+        form = ProductForm(request.POST, request.FILES, user_role=role)
         if form.is_valid():
-            product = form.save()
-            messages.success(request, f'Producto "{product.name}" creado exitosamente.')
-            return redirect('products_list')
+            product = form.save(commit=False)
+            # Si es proveedor, el producto queda pendiente de aprobación
+            if role == 'proveedor':
+                product.estado_aprobacion = 'PENDIENTE'
+                product.creado_por = request.user
+            product.save()
+            if role == 'proveedor':
+                messages.success(request, f'Producto "{product.name}" creado exitosamente. Está pendiente de aprobación por el gerente.')
+                return redirect('proveedor_dashboard')
+            else:
+                messages.success(request, f'Producto "{product.name}" creado exitosamente.')
+                return redirect('products_list')
     else:
-        form = ProductForm()
+        form = ProductForm(user_role=role)
     
     context = {
         'form': form,
@@ -171,20 +193,33 @@ def product_edit(request, pk):
     # Verificar permiso solo si está asignado, sino permitir acceso según rol
     role = get_user_role(request)
     if not (request.user.is_staff or request.user.has_perm('production.change_product')):
-        if role not in ['admin', 'manager']:
+        if role not in ['admin', 'manager', 'proveedor']:
             messages.error(request, 'No tienes permiso para editar productos.')
             return redirect('products_list')
     
     product = get_object_or_404(Product, pk=pk)
     
+    # Si es proveedor, solo puede editar sus propios productos
+    if role == 'proveedor' and product.creado_por != request.user:
+        messages.error(request, 'No tienes permiso para editar este producto.')
+        return redirect('proveedor_dashboard')
+    
     if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)
+        form = ProductForm(request.POST, request.FILES, instance=product, user_role=role)
         if form.is_valid():
             product = form.save()
-            messages.success(request, f'Producto "{product.name}" actualizado exitosamente.')
-            return redirect('products_list')
+            if role == 'proveedor':
+                # Si el proveedor edita un producto aprobado, vuelve a pendiente
+                if product.estado_aprobacion == 'APROBADO':
+                    product.estado_aprobacion = 'PENDIENTE'
+                    product.save()
+                messages.success(request, f'Producto "{product.name}" actualizado exitosamente. Está pendiente de aprobación.')
+                return redirect('proveedor_dashboard')
+            else:
+                messages.success(request, f'Producto "{product.name}" actualizado exitosamente.')
+                return redirect('products_list')
     else:
-        form = ProductForm(instance=product)
+        form = ProductForm(instance=product, user_role=role)
     
     context = {
         'form': form,
@@ -227,10 +262,31 @@ def product_delete_ajax(request, pk):
 def categories_overview(request):
     """Vista de categorías con productos asociados en formato acordeón"""
     role = get_user_role(request)
+    
+    # Filtrar productos según el rol
+    if role == 'proveedor':
+        # Proveedores ven sus productos
+        products_filter = Product.objects.filter(
+            is_active=True,
+            creado_por=request.user
+        ).order_by('name')
+    elif role in ['admin', 'manager', 'employee']:
+        # Admin, manager y empleados ven productos aprobados
+        products_filter = Product.objects.filter(
+            is_active=True,
+            estado_aprobacion='APROBADO'
+        ).order_by('name')
+    else:
+        # Clientes ven productos aprobados
+        products_filter = Product.objects.filter(
+            is_active=True,
+            estado_aprobacion='APROBADO'
+        ).order_by('name')
+    
     categories = Category.objects.all().prefetch_related(
         Prefetch(
             'product_set',
-            queryset=Product.objects.filter(is_active=True).order_by('name'),
+            queryset=products_filter,
             to_attr='active_products'
         )
     )
@@ -257,8 +313,12 @@ def tienda_online(request):
     sort = request.GET.get('sort', 'name')
     categoria_id = request.GET.get('categoria', '')
     
-    # Obtener productos activos disponibles (stock > 0)
-    products = Product.objects.select_related('category').filter(is_active=True, stock__gt=0)
+    # Obtener productos activos disponibles (stock > 0) y aprobados
+    products = Product.objects.select_related('category').filter(
+        is_active=True,
+        stock__gt=0,
+        estado_aprobacion='APROBADO'
+    )
     
     # Aplicar búsqueda
     if q:
@@ -426,6 +486,9 @@ def update_cart_quantity(request, product_id):
 @login_required
 def admin_panel(request):
     """Vista de administración de Django integrada en la página"""
+    from django.contrib import admin
+    from django.apps import apps
+    
     role = get_user_role(request)
     
     # Solo admin y gerente pueden acceder
@@ -433,5 +496,170 @@ def admin_panel(request):
         messages.error(request, 'No tienes permiso para acceder a la administración.')
         return redirect('dashboard')
     
-    # Redirigir al admin de Django
-    return redirect('/admin/')
+    # Obtener todas las aplicaciones y modelos registrados en el admin
+    app_dict = {}
+    
+    for model, model_admin in admin.site._registry.items():
+        app_label = model._meta.app_label
+        model_name = model._meta.model_name
+        verbose_name_plural = model._meta.verbose_name_plural
+        
+        # Verificar permisos
+        has_view = request.user.has_perm(f'{app_label}.view_{model_name}')
+        has_add = request.user.has_perm(f'{app_label}.add_{model_name}')
+        has_change = request.user.has_perm(f'{app_label}.change_{model_name}')
+        has_delete = request.user.has_perm(f'{app_label}.delete_{model_name}')
+        
+        if has_view or has_add or has_change or has_delete:
+            if app_label not in app_dict:
+                try:
+                    app_config = apps.get_app_config(app_label)
+                    app_verbose_name = app_config.verbose_name
+                except:
+                    app_verbose_name = app_label
+                
+                app_dict[app_label] = {
+                    'name': app_label,
+                    'verbose_name': app_verbose_name,
+                    'models': []
+                }
+            
+            app_dict[app_label]['models'].append({
+                'name': verbose_name_plural,
+                'model_name': model_name,
+                'app_label': app_label,
+                'admin_url': f'/admin-panel/{app_label}/{model_name}/',
+                'add_url': f'/admin-panel/{app_label}/{model_name}/add/',
+                'has_view': has_view,
+                'has_add': has_add,
+                'has_change': has_change,
+                'has_delete': has_delete,
+            })
+    
+    # Convertir dict a lista ordenada
+    app_list = list(app_dict.values())
+    app_list.sort(key=lambda x: x['verbose_name'])
+    
+    context = {
+        'app_list': app_list,
+        'user_role': role,
+    }
+    
+    return render(request, "production/admin_panel.html", context)
+
+
+@login_required
+def proveedor_dashboard(request):
+    """Dashboard del proveedor para modificar datos y gestionar productos"""
+    from accounts.models import ProveedorUser
+    from accounts.forms import ProveedorUserForm, UserUpdateForm, UserProfileForm
+    from accounts.views import ensure_user_profile
+    
+    role = get_user_role(request)
+    
+    # Solo proveedores pueden acceder
+    if role != 'proveedor':
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('dashboard')
+    
+    user_profile = ensure_user_profile(request.user)
+    
+    # Obtener o crear ProveedorUser
+    try:
+        proveedor_user = ProveedorUser.objects.get(user=request.user)
+    except ProveedorUser.DoesNotExist:
+        messages.error(request, 'No se encontró tu perfil de proveedor. Contacta al administrador.')
+        return redirect('dashboard')
+    
+    # Obtener productos del proveedor
+    mis_productos = Product.objects.filter(creado_por=request.user).order_by('-created_at')
+    productos_pendientes = mis_productos.filter(estado_aprobacion='PENDIENTE').count()
+    productos_aprobados = mis_productos.filter(estado_aprobacion='APROBADO').count()
+    productos_rechazados = mis_productos.filter(estado_aprobacion='RECHAZADO').count()
+    
+    # Manejar formularios
+    if request.method == 'POST':
+        if 'update_proveedor' in request.POST:
+            proveedor_form = ProveedorUserForm(request.POST, instance=proveedor_user)
+            user_form = UserUpdateForm(request.POST, instance=request.user)
+            profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
+            
+            if proveedor_form.is_valid() and user_form.is_valid() and profile_form.is_valid():
+                proveedor_form.save()
+                user_form.save()
+                profile_form.save()
+                messages.success(request, 'Tus datos se actualizaron correctamente.')
+                return redirect('proveedor_dashboard')
+            else:
+                messages.error(request, 'Por favor corrige los errores en el formulario.')
+        else:
+            proveedor_form = ProveedorUserForm(instance=proveedor_user)
+            user_form = UserUpdateForm(instance=request.user)
+            profile_form = UserProfileForm(instance=user_profile)
+    else:
+        proveedor_form = ProveedorUserForm(instance=proveedor_user)
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = UserProfileForm(instance=user_profile)
+    
+    context = {
+        'proveedor_user': proveedor_user,
+        'proveedor_form': proveedor_form,
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'mis_productos': mis_productos[:10],  # Últimos 10 productos
+        'productos_pendientes': productos_pendientes,
+        'productos_aprobados': productos_aprobados,
+        'productos_rechazados': productos_rechazados,
+        'user_profile': user_profile,
+    }
+    
+    return render(request, "production/proveedor_dashboard.html", context)
+
+
+@login_required
+def aprobar_productos(request):
+    """Vista para que el gerente apruebe o rechace productos"""
+    role = get_user_role(request)
+    
+    # Solo gerente y admin pueden acceder
+    if role not in ['manager', 'admin']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('dashboard')
+    
+    # Obtener productos pendientes
+    productos_pendientes = Product.objects.filter(
+        estado_aprobacion='PENDIENTE'
+    ).select_related('category', 'creado_por').order_by('-created_at')
+    
+    # Manejar aprobación/rechazo
+    if request.method == 'POST':
+        producto_id = request.POST.get('producto_id')
+        accion = request.POST.get('accion')  # 'aprobar' o 'rechazar'
+        
+        try:
+            producto = Product.objects.get(pk=producto_id, estado_aprobacion='PENDIENTE')
+            if accion == 'aprobar':
+                from django.utils import timezone
+                producto.estado_aprobacion = 'APROBADO'
+                producto.aprobado_por = request.user
+                producto.fecha_aprobacion = timezone.now()
+                producto.save()
+                messages.success(request, f'Producto "{producto.name}" aprobado exitosamente.')
+            elif accion == 'rechazar':
+                producto.estado_aprobacion = 'RECHAZADO'
+                producto.aprobado_por = request.user
+                producto.save()
+                messages.success(request, f'Producto "{producto.name}" rechazado.')
+            else:
+                messages.error(request, 'Acción no válida.')
+        except Product.DoesNotExist:
+            messages.error(request, 'Producto no encontrado o ya fue procesado.')
+        
+        return redirect('aprobar_productos')
+    
+    context = {
+        'productos_pendientes': productos_pendientes,
+        'user_role': role,
+    }
+    
+    return render(request, "production/aprobar_productos.html", context)

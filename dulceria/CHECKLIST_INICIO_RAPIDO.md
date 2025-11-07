@@ -169,3 +169,18 @@ http://127.0.0.1:8000/admin/
 
 ¡Feliz desarrollo! 🍬🚀
 
+## 📦 Actualización Inventario & Exportaciones
+
+```bash
+# Ejecutar migraciones y asegurar dependencias nuevas
+pip install -r requirements.txt
+python manage.py migrate
+```
+
+- [ ] Instalé las nuevas dependencias (`openpyxl` incluida) con `pip install -r requirements.txt`
+- [ ] Ejecuté `python manage.py migrate` y no hubo errores
+- [ ] Puedo entrar a http://127.0.0.1:8000/inventario/ sin errores de columnas
+- [ ] Probé el botón "Exportar Excel" en Inventario y descargué el archivo
+- [ ] Probé el botón "Exportar Excel" en Listado de Productos y descargué el archivo
+- [ ] Probé el botón "Exportar Usuarios" y descargué el archivo
+

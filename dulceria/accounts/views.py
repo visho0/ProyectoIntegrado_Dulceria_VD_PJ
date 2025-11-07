@@ -1,13 +1,16 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
-from django.db.models import F
+from django.db.models import F, Count
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse
+from django.utils import timezone
+from openpyxl import Workbook
 from organizations.models import Organization
 from .models import UserProfile
 def _get_default_organization(preferred_names=None):
@@ -79,12 +82,12 @@ class CustomLoginView(LoginView):
         else:
             self.request.session.set_expiry(0)
         return response
-
+    
     def get_success_url(self):
         # Redirigir según el rol del usuario
         user = self.request.user
         profile = ensure_user_profile(user)
-
+        
         if profile:
             role = profile.role
             if role == 'admin':
@@ -97,6 +100,9 @@ class CustomLoginView(LoginView):
             elif role == 'cliente':
                 self.request.session.cycle_key()
                 return reverse_lazy('tienda_online')
+            elif role == 'proveedor':
+                self.request.session.cycle_key()
+                return reverse_lazy('proveedor_dashboard')
             else:  # employee o viewer
                 self.request.session.cycle_key()
                 return reverse_lazy('products_list')
@@ -142,7 +148,7 @@ def dashboard(request):
     if not user_profile:
         messages.error(request, 'No se pudo crear el perfil de usuario. Contacta al administrador.')
         return redirect('logout')
-
+    
     user_org = user_profile.organization
     role = user_profile.role
     
@@ -208,7 +214,7 @@ def profile_view(request):
     else:
         user_form = UserUpdateForm(instance=request.user)
         profile_form = UserProfileForm(instance=user_profile)
-
+    
     context = {
         'user_profile': user_profile,
         'user_org': user_profile.organization,
@@ -249,3 +255,75 @@ def register_cliente(request):
         'form': form,
         'tipo_registro': tipo_registro
     })
+
+
+@login_required
+@require_http_methods(["GET"])
+def export_users_excel(request):
+    """Exportar la información de usuarios y perfiles a Excel"""
+    profile = ensure_user_profile(request.user)
+    role = profile.role if profile else None
+
+    if role not in ['admin', 'manager']:
+        messages.error(request, 'No tienes permiso para exportar usuarios.')
+        return redirect('dashboard')
+
+    wb = Workbook()
+
+    # Hoja principal con todos los usuarios
+    ws_usuarios = wb.active
+    ws_usuarios.title = 'Usuarios'
+    ws_usuarios.append([
+        'Username', 'Email', 'Nombre', 'Apellido', 'Rol', 'Estado', 'MFA',
+        'Organización', 'Teléfono', 'Área/Unidad', 'Observaciones', 'Último acceso'
+    ])
+
+    perfiles = UserProfile.objects.select_related('user', 'organization').order_by('role', 'user__username')
+    roles_dict = dict(UserProfile.ROLE_CHOICES)
+
+    for perfil in perfiles:
+        usuario = perfil.user
+        last_login = usuario.last_login
+        if last_login and timezone.is_naive(last_login):
+            last_login_display = last_login.strftime('%d-%m-%Y %H:%M')
+        elif last_login:
+            last_login_display = timezone.localtime(last_login).strftime('%d-%m-%Y %H:%M')
+        else:
+            last_login_display = ''
+
+        ws_usuarios.append([
+            usuario.username,
+            usuario.email,
+            usuario.first_name,
+            usuario.last_name,
+            roles_dict.get(perfil.role, perfil.role),
+            perfil.get_state_display(),
+            'Sí' if perfil.mfa_enabled else 'No',
+            perfil.organization.name if perfil.organization else '',
+            perfil.phone,
+            perfil.area,
+            perfil.observaciones,
+            last_login_display,
+        ])
+
+    # Hoja Resumen por Rol
+    ws_resumen = wb.create_sheet(title='Resumen por Rol')
+    ws_resumen.append(['Rol', 'Descripción', 'Total de usuarios'])
+
+    conteos_qs = UserProfile.objects.values('role').annotate(total=Count('id'))
+    conteos = {row['role']: row['total'] for row in conteos_qs}
+    for rol_value, rol_label in UserProfile.ROLE_CHOICES:
+        total = conteos.get(rol_value, 0)
+        ws_resumen.append([rol_value, rol_label, total])
+
+    # Respuesta HTTP
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    now = timezone.now()
+    if timezone.is_naive(now):
+        timestamp = now.strftime('%Y%m%d_%H%M%S')
+    else:
+        timestamp = timezone.localtime(now).strftime('%Y%m%d_%H%M%S')
+
+    wb.save(response)
+    response['Content-Disposition'] = f'attachment; filename="usuarios_{timestamp}.xlsx"'
+    return response

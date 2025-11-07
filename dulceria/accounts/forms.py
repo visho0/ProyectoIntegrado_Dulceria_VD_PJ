@@ -285,3 +285,47 @@ class UserProfileForm(forms.ModelForm):
             'mfa_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+
+class ProveedorUserForm(forms.ModelForm):
+    """Formulario para editar datos del proveedor"""
+    class Meta:
+        model = ProveedorUser
+        fields = ('rut', 'razon_social', 'nombre_fantasia', 'email', 'phone')
+        widgets = {
+            'rut': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '12',
+                'pattern': '[0-9]{7,8}-[0-9Kk]',
+                'oninput': 'this.value = this.value.replace(/[^0-9Kk-]/g, "")'
+            }),
+            'razon_social': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200'}),
+            'nombre_fantasia': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'maxlength': '254'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
+        }
+        labels = {
+            'rut': 'RUT',
+            'razon_social': 'Razón Social',
+            'nombre_fantasia': 'Nombre de Fantasía',
+            'email': 'Correo Electrónico',
+            'phone': 'Teléfono',
+        }
+
+
+from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
+
+
+class CustomPasswordResetForm(DjangoPasswordResetForm):
+    """Formulario personalizado para recuperación de contraseña"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Ingresa tu correo electrónico',
+            'autocomplete': 'email',
+            'maxlength': '254'
+        })
+        self.fields['email'].label = 'Correo Electrónico'
+        self.fields['email'].help_text = 'Ingresa el correo electrónico asociado a tu cuenta.'
+

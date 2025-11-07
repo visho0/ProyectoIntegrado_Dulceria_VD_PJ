@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Proveedor - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-truck"></i> Dashboard Proveedor</h2>
+        <a href="{% url 'product_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Agregar Producto
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Productos Pendientes</h5>
+                    <h2 class="text-warning">{{ productos_pendientes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Productos Aprobados</h5>
+                    <h2 class="text-success">{{ productos_aprobados }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Productos Rechazados</h5>
+                    <h2 class="text-danger">{{ productos_rechazados }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de datos del proveedor -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-person-gear"></i> Mis Datos</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="update_proveedor" value="1">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Datos del Proveedor</h6>
+                        {% for field in proveedor_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Datos de Usuario</h6>
+                        {% for field in user_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        {% for field in profile_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mis productos -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-box-seam"></i> Mis Productos</h5>
+        </div>
+        <div class="card-body">
+            {% if mis_productos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>SKU</th>
+                                <th>Categoría</th>
+                                <th>Estado</th>
+                                <th>Fecha Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in mis_productos %}
+                                <tr>
+                                    <td>{{ producto.name }}</td>
+                                    <td><code>{{ producto.sku }}</code></td>
+                                    <td>{{ producto.category.name }}</td>
+                                    <td>
+                                        {% if producto.estado_aprobacion == 'PENDIENTE' %}
+                                            <span class="badge bg-warning text-dark">Pendiente</span>
+                                        {% elif producto.estado_aprobacion == 'APROBADO' %}
+                                            <span class="badge bg-success">Aprobado</span>
+                                        {% elif producto.estado_aprobacion == 'RECHAZADO' %}
+                                            <span class="badge bg-danger">Rechazado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ producto.created_at|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'product_edit' producto.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No has creado ningún producto aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

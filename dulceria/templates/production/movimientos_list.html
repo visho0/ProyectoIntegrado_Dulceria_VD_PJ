@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Movimientos de Inventario - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .btn-outline-primary {
+        color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+        color: white;
+    }
+
+    .tipo-badge-ingreso {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .tipo-badge-salida {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .tipo-badge-ajuste {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .tipo-badge-devolucion {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .tipo-badge-transferencia {
+        background-color: #6c757d;
+        color: white;
+    }
+</style>
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list"></i> Movimientos de Inventario</h2>
+        <div>
+            <a href="{% url 'inventory_dashboard' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+            <a href="{% url 'movimiento_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Registrar Movimiento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="q" class="form-label">Buscar</label>
+                    <input type="text" class="form-control" id="q" name="q" value="{{ q }}" 
+                           placeholder="SKU, producto, proveedor, doc. ref...">
+                </div>
+                <div class="col-md-2">
+                    <label for="tipo" class="form-label">Tipo</label>
+                    <select class="form-select" id="tipo" name="tipo">
+                        <option value="">Todos</option>
+                        {% for tipo_val, tipo_label in tipos_movimiento %}
+                            <option value="{{ tipo_val }}" {% if tipo == tipo_val %}selected{% endif %}>
+                                {{ tipo_label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_desde" class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_hasta" class="form-label">Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Movimientos -->
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Movimientos</h5>
+            <a href="{% url 'export_inventory_excel' %}" class="btn btn-sm btn-light">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </a>
+        </div>
+        <div class="card-body">
+            {% if movimientos %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tablaMovimientos">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>SKU</th>
+                                <th>Proveedor</th>
+                                <th>Bodega</th>
+                                <th>Cantidad</th>
+                                <th>Lote</th>
+                                <th>Serie</th>
+                                <th>Vence</th>
+                                <th>Doc. Ref.</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mov in movimientos %}
+                                <tr>
+                                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <span class="badge tipo-badge-{{ mov.tipo }}">
+                                            {{ mov.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td><code>{{ mov.producto.sku }}</code></td>
+                                    <td>{{ mov.proveedor.rut|default:"—" }}</td>
+                                    <td>{{ mov.bodega.codigo }}</td>
+                                    <td>
+                                        {% if mov.tipo == 'ingreso' or mov.tipo == 'devolucion' %}
+                                            <span class="text-success">+{{ mov.cantidad }}</span>
+                                        {% elif mov.tipo == 'salida' %}
+                                            <span class="text-danger">-{{ mov.cantidad }}</span>
+                                        {% else %}
+                                            {{ mov.cantidad }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ mov.lote|default:"—" }}</td>
+                                    <td>{{ mov.serie|default:"—" }}</td>
+                                    <td>{{ mov.fecha_vencimiento|date:"d/m/Y"|default:"—" }}</td>
+                                    <td>{{ mov.doc_referencia|default:"—" }}</td>
+                                    <td>
+                                        {% if user_role == 'admin' or user_role == 'manager' %}
+                                            <a href="{% url 'movimiento_edit' mov.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </a>
+                                            <form method="post" action="{% url 'movimiento_delete' mov.pk %}" 
+                                                  class="d-inline" 
+                                                  onsubmit="return confirm('¿Estás seguro de eliminar este movimiento?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i> Eliminar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if movimientos.has_other_pages %}
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center">
+                            {% if movimientos.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ movimientos.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if movimientos.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ movimientos.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Siguiente
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No hay movimientos que coincidan con los filtros.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% comment %} Export functionality handled server-side; script removed {% endcomment %}
+{% endblock %}
+

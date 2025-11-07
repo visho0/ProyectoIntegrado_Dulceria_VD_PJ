@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Inventario - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+        --lilis-gold: #D4AF37;
+        --lilis-light: #FFF8E1;
+    }
+
+    body {
+        background-color: var(--lilis-light);
+    }
+
+    .stat-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card h4 {
+        color: var(--lilis-red);
+        font-weight: 700;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .btn-outline-primary {
+        color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+        color: white;
+    }
+
+    .tipo-badge-ingreso {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .tipo-badge-salida {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .tipo-badge-ajuste {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .tipo-badge-devolucion {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .tipo-badge-transferencia {
+        background-color: #6c757d;
+        color: white;
+    }
+</style>
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-arrow-left-right"></i> Dashboard de Inventario</h2>
+        <div>
+            <a href="{% url 'movimientos_list' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-list"></i> Ver Movimientos
+            </a>
+            <a href="{% url 'movimiento_create' %}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-circle"></i> Registrar Movimiento
+            </a>
+            <a href="{% url 'export_inventory_excel' %}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Movimientos (Hoy)</h5>
+                    <h2 class="text-primary">{{ movimientos_hoy }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Stock Total</h5>
+                    <h2 class="text-primary">{{ stock_total }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Productos Únicos</h5>
+                    <h2 class="text-primary">{{ productos_unicos }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos Movimientos -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Movimientos</h5>
+        </div>
+        <div class="card-body">
+            {% if ultimos_movimientos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>SKU</th>
+                                <th>Producto</th>
+                                <th>Proveedor</th>
+                                <th>Bodega</th>
+                                <th>Cantidad</th>
+                                <th>Doc. Ref.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mov in ultimos_movimientos %}
+                                <tr>
+                                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <span class="badge tipo-badge-{{ mov.tipo }}">
+                                            {{ mov.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td><code>{{ mov.producto.sku }}</code></td>
+                                    <td>{{ mov.producto.name }}</td>
+                                    <td>{{ mov.proveedor.rut|default:"—" }}</td>
+                                    <td>{{ mov.bodega.codigo }}</td>
+                                    <td>
+                                        {% if mov.tipo == 'ingreso' or mov.tipo == 'devolucion' %}
+                                            <span class="text-success">+{{ mov.cantidad }}</span>
+                                        {% elif mov.tipo == 'salida' %}
+                                            <span class="text-danger">-{{ mov.cantidad }}</span>
+                                        {% else %}
+                                            {{ mov.cantidad }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ mov.doc_referencia|default:"—" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No hay movimientos registrados aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

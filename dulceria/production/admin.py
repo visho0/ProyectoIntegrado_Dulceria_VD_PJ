@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Category, Product, AlertRule, ProductAlertRule, Measurement
+from .models import Category, Product, AlertRule, ProductAlertRule, Bodega, MovimientoInventario, Proveedor, ProductoProveedor
+# Measurement y Device no se usan - comentado
+# from .models import Measurement
 
 class ProductAlertRuleInline(admin.TabularInline):
     model = ProductAlertRule
@@ -80,27 +82,60 @@ class ProductAlertRuleAdmin(admin.ModelAdmin):
         }),
     )
 
-@admin.register(Measurement)
-class MeasurementAdmin(admin.ModelAdmin):
-    list_display = ('device', 'value', 'unit', 'timestamp', 'created_at')
-    search_fields = ('device__name', 'device__serial', 'device__zone__name', 'notes')
-    list_filter = ('device__zone__organization', 'device__zone', 'device', 'timestamp', 'created_at')
-    ordering = ('-timestamp',)
-    list_select_related = ('device', 'device__zone', 'device__zone__organization')
-    readonly_fields = ('created_at',)
-    date_hierarchy = 'timestamp'
+@admin.register(Bodega)
+class BodegaAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'nombre', 'is_active', 'created_at')
+    search_fields = ('codigo', 'nombre', 'descripcion')
+    list_filter = ('is_active', 'created_at', 'updated_at')
+    ordering = ('codigo',)
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(MovimientoInventario)
+class MovimientoInventarioAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'tipo', 'producto', 'bodega', 'cantidad', 'proveedor', 'doc_referencia', 'created_at')
+    search_fields = ('producto__sku', 'producto__name', 'proveedor__razon_social', 'doc_referencia', 'lote', 'serie')
+    list_filter = ('tipo', 'bodega', 'fecha', 'created_at')
+    ordering = ('-fecha', '-created_at')
+    list_select_related = ('producto', 'proveedor', 'bodega', 'creado_por')
+    readonly_fields = ('created_at', 'updated_at', 'creado_por')
+    date_hierarchy = 'fecha'
     
     fieldsets = (
-        ('Medición', {
-            'fields': ('device', 'value', 'unit', 'timestamp')
+        ('Datos del Movimiento', {
+            'fields': ('fecha', 'tipo', 'producto', 'proveedor', 'bodega', 'cantidad')
         }),
-        ('Información Adicional', {
-            'fields': ('notes', 'created_at'),
+        ('Control Avanzado', {
+            'fields': ('lote', 'serie', 'fecha_vencimiento'),
+            'classes': ('collapse',)
+        }),
+        ('Referencias y Observaciones', {
+            'fields': ('doc_referencia', 'observaciones', 'motivo'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('creado_por', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            'device__zone__organization'
-        )
+    def save_model(self, request, obj, form, change):
+        if not change:  # Si es nuevo
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+
+@admin.register(Proveedor)
+class ProveedorAdmin(admin.ModelAdmin):
+    list_display = ('rut', 'razon_social', 'nombre_fantasia', 'email', 'estado', 'created_at')
+    search_fields = ('rut', 'razon_social', 'nombre_fantasia', 'email')
+    list_filter = ('estado', 'moneda', 'created_at')
+    ordering = ('razon_social',)
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(ProductoProveedor)
+class ProductoProveedorAdmin(admin.ModelAdmin):
+    list_display = ('product', 'proveedor', 'costo', 'lead_time', 'es_preferente', 'created_at')
+    search_fields = ('product__name', 'product__sku', 'proveedor__razon_social')
+    list_filter = ('es_preferente', 'created_at')
+    ordering = ('-es_preferente', 'proveedor__razon_social')
+    list_select_related = ('product', 'proveedor')
+    readonly_fields = ('created_at', 'updated_at')

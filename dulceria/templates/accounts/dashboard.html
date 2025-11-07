@@ -177,7 +177,28 @@
                 {% endif %}
                 {% if user_role == 'admin' or user_role == 'manager' %}
                 <div class="col-md-3 mb-2">
-                    <a href="{% url 'admin_panel' %}" class="btn btn-outline-danger w-100">
+                    <a href="{% url 'aprobar_productos' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-check-circle"></i> Aprobar Productos
+                    </a>
+                </div>
+                {% endif %}
+                {% if user_role == 'admin' or user_role == 'manager' or user_role == 'employee' %}
+                <div class="col-md-3 mb-2">
+                    <a href="{% url 'inventory_dashboard' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-arrow-left-right"></i> Inventario
+                    </a>
+                </div>
+                {% endif %}
+                {% if user_role == 'admin' or user_role == 'manager' %}
+                <div class="col-md-3 mb-2">
+                    <a href="{% url 'export_users_excel' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-people"></i> Exportar Usuarios
+                    </a>
+                </div>
+                {% endif %}
+                {% if user_role == 'admin' or user_role == 'manager' %}
+                <div class="col-md-3 mb-2">
+                    <a href="{% url 'admin_panel' %}" class="btn btn-outline-primary w-100">
                         <i class="bi bi-gear"></i> Administración
                     </a>
                 </div>

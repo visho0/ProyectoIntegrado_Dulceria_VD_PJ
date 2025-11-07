@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel de Administración - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<style>
+    .admin-panel {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    .admin-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .admin-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .app-section {
+        margin-bottom: 2rem;
+    }
+    .app-title {
+        color: #C8102E;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #C8102E;
+    }
+    .model-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        padding: 1rem;
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+    .model-link:hover {
+        background-color: #f0f0f0;
+        color: inherit;
+    }
+    .model-actions {
+        margin-top: 0.5rem;
+    }
+    .model-actions a {
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="admin-panel">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-gear"></i> Panel de Administración</h2>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+
+        {% if app_list %}
+            {% for app in app_list %}
+                <div class="app-section">
+                    <h3 class="app-title">
+                        <i class="bi bi-folder"></i> {{ app.verbose_name|title }}
+                    </h3>
+                    <div class="row">
+                        {% for model in app.models %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card admin-card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="bi bi-box"></i> {{ model.name }}
+                                        </h5>
+                                        <p class="card-text text-muted small">
+                                            Modelo: {{ model.model_name }}
+                                        </p>
+                                        <div class="model-actions">
+                                            {% if model.has_view %}
+                                                <a href="{{ model.admin_url }}" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-list"></i> Ver Lista
+                                                </a>
+                                            {% endif %}
+                                            {% if model.has_add %}
+                                                <a href="{{ model.add_url }}" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-plus-circle"></i> Agregar
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No tienes permisos para acceder a ningún modelo del administrador.
+            </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="/admin/" class="btn btn-outline-primary" target="_blank">
+                <i class="bi bi-box-arrow-up-right"></i> Abrir Admin de Django (Nueva Pestaña)
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

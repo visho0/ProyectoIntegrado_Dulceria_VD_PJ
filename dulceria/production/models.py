@@ -60,9 +60,40 @@ class Product(models.Model):
     # Otros
     is_active = models.BooleanField(default=True, verbose_name='Activo')
     imagen = models.ImageField(upload_to='productos/', null=True, blank=True, verbose_name='Imagen')
+    
+    # Aprobación de productos
+    ESTADO_APROBACION_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('APROBADO', 'Aprobado'),
+        ('RECHAZADO', 'Rechazado'),
+    ]
+    estado_aprobacion = models.CharField(
+        max_length=20,
+        choices=ESTADO_APROBACION_CHOICES,
+        default='PENDIENTE',
+        verbose_name='Estado de Aprobación'
+    )
+    aprobado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='productos_aprobados',
+        verbose_name='Aprobado por'
+    )
+    fecha_aprobacion = models.DateTimeField(null=True, blank=True, verbose_name='Fecha de Aprobación')
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='productos_creados',
+        verbose_name='Creado por'
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
-    
+
     class Meta:
         verbose_name = 'Producto'
         verbose_name_plural = 'Productos'
@@ -91,7 +122,7 @@ class Product(models.Model):
         if self.punto_reorden is None:
             self.punto_reorden = self.stock_minimo
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return f"{self.name} ({self.sku})"
 
@@ -235,3 +266,106 @@ class ProductoProveedor(models.Model):
         super().save(*args, **kwargs)
         if self.es_preferente:
             ProductoProveedor.objects.filter(product=self.product).exclude(pk=self.pk).update(es_preferente=False)
+
+
+class Bodega(models.Model):
+    """Modelo para bodegas/almacenes"""
+    codigo = models.CharField(max_length=20, unique=True, verbose_name='Código', help_text='Ej: BOD-CENTRAL')
+    nombre = models.CharField(max_length=200, verbose_name='Nombre')
+    descripcion = models.TextField(blank=True, verbose_name='Descripción')
+    direccion = models.CharField(max_length=255, blank=True, verbose_name='Dirección')
+    is_active = models.BooleanField(default=True, verbose_name='Activa')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
+    
+    class Meta:
+        verbose_name = 'Bodega'
+        verbose_name_plural = 'Bodegas'
+        ordering = ['codigo']
+    
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+
+class MovimientoInventario(models.Model):
+    """Modelo para movimientos de inventario"""
+    TIPO_MOVIMIENTO_CHOICES = [
+        ('ingreso', 'Ingreso'),
+        ('salida', 'Salida'),
+        ('ajuste', 'Ajuste'),
+        ('devolucion', 'Devolución'),
+        ('transferencia', 'Transferencia'),
+    ]
+    
+    # Datos básicos del movimiento
+    fecha = models.DateTimeField(verbose_name='Fecha y Hora')
+    tipo = models.CharField(max_length=20, choices=TIPO_MOVIMIENTO_CHOICES, verbose_name='Tipo de Movimiento')
+    producto = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name='Producto', related_name='movimientos')
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Proveedor', related_name='movimientos')
+    bodega = models.ForeignKey(Bodega, on_delete=models.PROTECT, verbose_name='Bodega', related_name='movimientos')
+    cantidad = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], verbose_name='Cantidad')
+    
+    # Control avanzado
+    lote = models.CharField(max_length=50, blank=True, verbose_name='Lote', help_text='Número de lote')
+    serie = models.CharField(max_length=50, blank=True, verbose_name='Serie', help_text='Número de serie')
+    fecha_vencimiento = models.DateField(null=True, blank=True, verbose_name='Fecha de Vencimiento')
+    
+    # Referencias y observaciones
+    doc_referencia = models.CharField(max_length=100, blank=True, verbose_name='Documento de Referencia', help_text='OC-123 / FAC-456 / GUIA-789')
+    observaciones = models.TextField(blank=True, verbose_name='Observaciones', help_text='Notas de operación, recibo, daño, etc.')
+    motivo = models.CharField(max_length=255, blank=True, verbose_name='Motivo', help_text='Diferencia inventario, devolución cliente, etc.')
+    
+    # Auditoría
+    creado_por = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='movimientos_creados', verbose_name='Creado por')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización')
+    
+    class Meta:
+        verbose_name = 'Movimiento de Inventario'
+        verbose_name_plural = 'Movimientos de Inventario'
+        ordering = ['-fecha', '-created_at']
+        indexes = [
+            models.Index(fields=['-fecha'], name='mov_fecha_idx'),
+            models.Index(fields=['producto', '-fecha'], name='mov_prod_fecha_idx'),
+            models.Index(fields=['bodega', '-fecha'], name='mov_bod_fecha_idx'),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.producto.sku} - {self.cantidad} - {self.fecha.strftime('%d/%m/%Y %H:%M')}"
+    
+    def save(self, *args, **kwargs):
+        """Actualizar stock del producto al guardar el movimiento"""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            # Actualizar stock según el tipo de movimiento
+            cantidad_int = int(float(self.cantidad))
+            if self.tipo == 'ingreso':
+                self.producto.stock += cantidad_int
+            elif self.tipo == 'salida':
+                self.producto.stock = max(0, self.producto.stock - cantidad_int)
+            elif self.tipo == 'ajuste':
+                # Los ajustes pueden ser positivos o negativos según la cantidad
+                self.producto.stock = max(0, self.producto.stock + cantidad_int)
+            elif self.tipo == 'devolucion':
+                self.producto.stock += cantidad_int
+            # Transferencias no afectan el stock total, solo entre bodegas
+            
+            self.producto.save(update_fields=['stock'])
+    
+    def delete(self, *args, **kwargs):
+        """Revertir el stock al eliminar un movimiento"""
+        # Revertir el cambio en el stock
+        cantidad_int = int(float(self.cantidad))
+        if self.tipo == 'ingreso':
+            self.producto.stock = max(0, self.producto.stock - cantidad_int)
+        elif self.tipo == 'salida':
+            self.producto.stock += cantidad_int
+        elif self.tipo == 'ajuste':
+            self.producto.stock = max(0, self.producto.stock - cantidad_int)
+        elif self.tipo == 'devolucion':
+            self.producto.stock = max(0, self.producto.stock - cantidad_int)
+        
+        self.producto.save(update_fields=['stock'])
+        super().delete(*args, **kwargs)

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Aprobar Productos - Dulcería Lili's{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-check-circle"></i> Aprobar Productos</h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+    </div>
+
+    {% if productos_pendientes %}
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Productos Pendientes de Aprobación ({{ productos_pendientes.count }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>SKU</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Creado por</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in productos_pendientes %}
+                                <tr>
+                                    <td>
+                                        {% if producto.imagen %}
+                                            <img src="{{ producto.imagen.url }}" alt="{{ producto.name }}" 
+                                                 class="rounded" style="width:50px; height:50px; object-fit:cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                                 style="width:50px; height:50px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ producto.name }}</strong>
+                                        {% if producto.description %}
+                                            <br><small class="text-muted">{{ producto.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ producto.sku }}</code></td>
+                                    <td>{{ producto.category.name }}</td>
+                                    <td>${{ producto.price|floatformat:0 }} CLP</td>
+                                    <td>
+                                        {% if producto.stock > 10 %}
+                                            <span class="badge bg-success">{{ producto.stock }}</span>
+                                        {% elif producto.stock > 0 %}
+                                            <span class="badge bg-warning text-dark">{{ producto.stock }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ producto.stock }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ producto.creado_por.username|default:"N/A" }}</td>
+                                    <td>{{ producto.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="producto_id" value="{{ producto.pk }}">
+                                            <input type="hidden" name="accion" value="aprobar">
+                                            <button type="submit" class="btn btn-sm btn-success" 
+                                                    onclick="return confirm('¿Estás seguro de aprobar este producto?');">
+                                                <i class="bi bi-check-circle"></i> Aprobar
+                                            </button>
+                                        </form>
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="producto_id" value="{{ producto.pk }}">
+                                            <input type="hidden" name="accion" value="rechazar">
+                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                    onclick="return confirm('¿Estás seguro de rechazar este producto?');">
+                                                <i class="bi bi-x-circle"></i> Rechazar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No hay productos pendientes de aprobación.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
