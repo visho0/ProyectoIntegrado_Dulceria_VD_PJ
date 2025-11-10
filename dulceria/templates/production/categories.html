@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Categorías de Productos{% endblock %}
 
@@ -9,21 +10,17 @@
         color: #8b0000;
         font-weight: 600;
     }
-
     .accordion-button:not(.collapsed) {
         background-color: #c8102e;
         color: #f6e7c1;
     }
-
     .accordion-button:focus {
         box-shadow: 0 0 0 0.25rem rgba(200, 16, 46, 0.25);
     }
-
     .category-badge {
         background-color: #d4af37 !important;
         color: #8b0000 !important;
     }
-
     .product-price {
         color: #c8102e;
         font-weight: 600;
@@ -31,6 +28,15 @@
 </style>
 
 <div class="container py-4">
+
+    <!-- Imagen superior -->
+    <div class="text-center mb-4">
+        <img src="{% static 'img/lilis_productos.png' %}" 
+             alt="Productos Dulcería Lilis" 
+             class="img-fluid rounded shadow-sm" 
+             style="max-width: 400px;">
+    </div>
+
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-tags"></i> Catálogo de Categorías</h1>
@@ -41,58 +47,58 @@
         </a>
     </div>
 
+    <!-- Tu código original de categorías -->
     {% if categories %}
-    <div class="accordion" id="categoriesAccordion">
-        {% for category in categories %}
-        <div class="accordion-item mb-3 shadow-sm">
-            <h2 class="accordion-header" id="heading{{ category.id }}">
-                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
-                        data-bs-toggle="collapse" data-bs-target="#collapse{{ category.id }}"
-                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
-                        aria-controls="collapse{{ category.id }}">
-                    <span class="me-2">{{ category.name }}</span>
-                    <span class="badge category-badge ms-auto">
-                        {{ category.active_products|length }} producto{% if category.active_products|length != 1 %}s{% endif %}
-                    </span>
-                </button>
-            </h2>
-            <div id="collapse{{ category.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
-                 aria-labelledby="heading{{ category.id }}" data-bs-parent="#categoriesAccordion">
-                <div class="accordion-body">
-                    {% if category.active_products %}
-                        <ul class="list-group list-group-flush">
-                            {% for product in category.active_products %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ product.name }}</strong>
-                                    <div class="text-muted small">
-                                        SKU: {{ product.sku }} &middot; Stock: {{ product.stock }}
+        <div class="accordion" id="categoriesAccordion">
+            {% for category in categories %}
+            <div class="accordion-item mb-3 shadow-sm">
+                <h2 class="accordion-header" id="heading{{ category.id }}">
+                    <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapse{{ category.id }}"
+                            aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                            aria-controls="collapse{{ category.id }}">
+                        <span class="me-2">{{ category.name }}</span>
+                        <span class="badge category-badge ms-auto">
+                            {{ category.active_products|length }} producto{% if category.active_products|length != 1 %}s{% endif %}
+                        </span>
+                    </button>
+                </h2>
+                <div id="collapse{{ category.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                     aria-labelledby="heading{{ category.id }}" data-bs-parent="#categoriesAccordion">
+                    <div class="accordion-body">
+                        {% if category.active_products %}
+                            <ul class="list-group list-group-flush">
+                                {% for product in category.active_products %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ product.name }}</strong>
+                                        <div class="text-muted small">
+                                            SKU: {{ product.sku }} &middot; Stock: {{ product.stock }}
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="product-price">${{ product.price|floatformat:0 }} CLP</span>
-                                    {% if perms.production.change_product %}
-                                        <a href="{% url 'product_edit' product.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="mb-0 text-muted"><i class="bi bi-info-circle"></i> No hay productos activos en esta categoría.</p>
-                    {% endif %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="product-price">${{ product.price|floatformat:0 }} CLP</span>
+                                        {% if perms.production.change_product %}
+                                            <a href="{% url 'product_edit' product.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="mb-0 text-muted"><i class="bi bi-info-circle"></i> No hay productos activos en esta categoría.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
     {% else %}
-    <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle"></i> No hay categorías registradas en el sistema todavía.
-    </div>
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> No hay categorías registradas en el sistema todavía.
+        </div>
     {% endif %}
 </div>
 {% endblock %}
-
