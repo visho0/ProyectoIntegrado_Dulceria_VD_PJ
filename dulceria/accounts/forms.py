@@ -286,6 +286,12 @@ class UserProfileForm(forms.ModelForm):
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if avatar and avatar.size > 3 * 1024 * 1024:
+            raise forms.ValidationError('La imagen no debe superar los 3 MB.')
+        return avatar
+
 
 class ProveedorUserForm(forms.ModelForm):
     """Formulario para editar datos del proveedor"""

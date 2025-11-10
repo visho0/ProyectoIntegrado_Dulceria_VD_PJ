@@ -1,0 +1,102 @@
+Guía de despliegue en AWS para el proyecto Django `dulceria`
+============================================================
+
+1. Preparación local
+--------------------
+1.1. Asegúrate de tener AWS CLI y EB CLI configurados con credenciales IAM que posean permisos sobre Elastic Beanstalk, S3, RDS y CloudWatch.  
+1.2. Define el archivo `.env` con los valores que el proyecto espera según `dulceria/dulceria/settings.py` (por ejemplo `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`, `DB_*`, `SESSION_COOKIE_SECURE`).  
+1.3. Congela dependencias (si hiciste cambios) ejecutando `pip freeze > requirements.txt`.  
+1.4. Ejecuta `python manage.py collectstatic` para validar que la configuración de archivos estáticos funciona (Elastic Beanstalk lo volverá a hacer en fase de despliegue).
+
+2. Base de datos en Amazon RDS (MySQL)
+-------------------------------------
+2.1. Crea una instancia RDS MySQL 8.x en la misma región donde levantarás la aplicación.  
+2.2. Configura un subnet group público o privado (si es privado, necesitarás un bastión o VPC peering para administrarla).  
+2.3. Anota host, puerto, usuario, contraseña y nombre de base de datos; estos valores alimentarán `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.  
+2.4. Ajusta el security group para permitir tráfico desde el security group de Elastic Beanstalk.
+
+3. Bucket S3 para archivos estáticos y media (opcional pero recomendado)
+-----------------------------------------------------------------------
+3.1. Crea un bucket S3 dedicado (ej. `dulceria-static-prod`).  
+3.2. Configura una política que permita a la instancia de Elastic Beanstalk leer y escribir.  
+3.3. Instala y configura `django-storages` si decides servir estáticos desde S3; actualiza `STATICFILES_STORAGE` y `DEFAULT_FILE_STORAGE` en `settings.py` para producción.
+
+4. Configuración de Elastic Beanstalk
+------------------------------------
+4.1. Ejecuta `eb init` en la raíz del proyecto (`dulceria/`) y selecciona:
+     - Plataforma: Python 3.12 running on 64bit Amazon Linux 2023 (o la versión disponible más cercana).  
+     - Región: la misma donde resides tu RDS.
+4.2. Crea un entorno con `eb create dulceria-prod --single` (puedes ajustar nombre y tipo de instancia).  
+4.3. En el panel de Elastic Beanstalk (o usando `eb setenv`), define las variables de entorno:
+     ```
+     SECRET_KEY=***
+     DEBUG=False
+     ALLOWED_HOSTS=tu-dominio,tu-env.elasticbeanstalk.com
+     DB_ENGINE=django.db.backends.mysql
+     DB_NAME=dulceria_db
+     DB_USER=usuario_rds
+     DB_PASSWORD=clave_rds
+     DB_HOST=endpoint-rds.amazonaws.com
+     DB_PORT=3306
+     EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+     EMAIL_HOST=smtp.tudominio.com
+     EMAIL_PORT=587
+     EMAIL_USE_TLS=True
+     EMAIL_HOST_USER=***
+     EMAIL_HOST_PASSWORD=***
+     SESSION_COOKIE_SECURE=True
+     SESSION_COOKIE_SAMESITE=None
+     ```
+     Ajusta según tus credenciales y proveedor SMTP real.  
+4.4. Sube el archivo `dulceria/dulceria/wsgi.py` como punto de entrada (Elastic Beanstalk lo detecta automáticamente si la estructura es estándar).
+
+5. Configurar archivos estáticos
+--------------------------------
+5.1. Crea en la raíz del proyecto un archivo `.ebextensions/01_static.config` con el siguiente contenido si decides servir estáticos desde el sistema de archivos de la instancia:
+     ```
+     option_settings:
+       aws:elasticbeanstalk:container:python:
+         WSGIPath: dulceria/wsgi.py
+       aws:elasticbeanstalk:environment:proxy:staticfiles:
+         /static: static
+         /media: media
+     container_commands:
+       01_collectstatic:
+         command: "source /var/app/venv/*/bin/activate && python manage.py collectstatic --noinput"
+     ```
+5.2. Si usas S3, reemplaza el bloque de staticfiles con la configuración de `django-storages` y evita copiar los directorios a la instancia.
+
+6. Despliegue
+-------------
+6.1. Ejecuta `eb deploy dulceria-prod`.  
+6.2. Monitorea los logs con `eb logs --follow` para asegurarte de que migraciones, recolección de estáticos y arranque de Gunicorn se ejecuten correctamente.  
+6.3. Ingresa a la consola de Elastic Beanstalk y agrega health checks en Application Load Balancer para vigilar el estado de la aplicación.
+
+7. Post-despliegue
+------------------
+7.1. Ejecuta migraciones en el entorno remoto:
+     ```
+     eb ssh dulceria-prod
+     source /var/app/venv/*/bin/activate
+     python manage.py migrate
+     python manage.py createsuperuser
+     exit
+     ```
+7.2. Carga datos iniciales si lo necesitas (`python manage.py loaddata fixtures/datos_iniciales.json`).  
+7.3. Configura HTTPS en el Load Balancer (sube tu certificado a AWS Certificate Manager y asócialo al listener 443).  
+7.4. Actualiza `ALLOWED_HOSTS` para incluir el dominio final y ajusta `CSRF_TRUSTED_ORIGINS` si usas un dominio personalizado.
+
+8. Automatización y monitoreo
+-----------------------------
+8.1. Habilita Application Auto Scaling para escalar horizontalmente según CPU, memoria o número de solicitudes.  
+8.2. Configura alarmas en CloudWatch para CPU, estado de salud e impuestos de base de datos.  
+8.3. Usa AWS Systems Manager Parameter Store o Secrets Manager para gestionar contraseñas de forma segura y remplaza las variables planas con referencias dinámicas (`aws ssm`) en Elastic Beanstalk.  
+8.4. Programa backups automáticos de RDS y ensaya restauraciones periódicas.
+
+9. GitHub y CI/CD
+-----------------
+9.1. Sube el repositorio a GitHub público para cumplir el requisito académico.  
+9.2. Opcional: configura GitHub Actions para ejecutar pruebas, linting y disparar `eb deploy` contra Elastic Beanstalk o `aws deploy push` si migras a CodeDeploy.
+
+Con estos pasos, el proyecto queda desplegado públicamente en AWS con base de datos administrada, archivos estáticos gestionados y entorno seguro para producción.
+

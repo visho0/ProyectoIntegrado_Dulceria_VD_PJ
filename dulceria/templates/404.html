@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Página no encontrada{% endblock %}
+
+{% block content %}
+<style>
+  .error-404-wrapper {
+    text-align: center;
+    padding: 4rem 1rem;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe2e2 100%);
+    border-radius: 1.5rem;
+    box-shadow: 0 15px 40px rgba(200, 16, 46, 0.15);
+  }
+  .error-404-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #C8102E;
+    color: #F4D35E;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .error-404-title {
+    color: #C8102E;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .error-404-text {
+    color: #7a3b00;
+  }
+  .error-404-btn {
+    background-color: #C8102E;
+    border: none;
+    color: #F4D35E;
+    font-weight: 600;
+    border-radius: 999px;
+    padding-inline: 2.5rem;
+  }
+  .error-404-btn:hover {
+    background-color: #9f0c23;
+    color: #fffbe6;
+  }
+</style>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="error-404-wrapper">
+        <div class="error-404-icon">
+          <i class="bi bi-compass"></i>
+        </div>
+        <h1 class="display-5 error-404-title">404</h1>
+        <p class="lead error-404-text mb-4">
+          Ups, la página que buscas parece haberse derretido como un caramelo al sol.
+        </p>
+        <p class="text-muted mb-4">
+          Revisa la dirección o vuelve al inicio para seguir disfrutando del sistema de gestión de la dulcería.
+        </p>
+        <a href="{% url 'dashboard' %}" class="btn error-404-btn">
+          <i class="bi bi-house-door-fill me-2"></i>Volver al inicio
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

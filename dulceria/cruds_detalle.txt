@@ -1,0 +1,25 @@
+CRUD DE PRODUCTOS (aplicación `production`)
+------------------------------------------
+- Listado de productos — función `products_list` (`production/views.py`, L84-L149). Maneja filtro por palabra clave, ordenamiento validado, paginación con persistencia en sesión y decide qué conjunto de productos exponer según el rol. Renderiza el template `templates/production/products_list.html`.
+- Creación — función `product_create` (`production/views.py`, L152-L188). Verifica permisos combinando `is_staff`, permisos explícitos y rol en perfil. Usa `ProductForm` para validar datos y archivos (`production/forms.py`, L6-L132); instancia `Product` y asigna `estado_aprobacion` y `creado_por` a proveedores antes de guardar. Redirige al listado o al dashboard de proveedores según rol.
+- Edición — función `product_edit` (`production/views.py`, L190-L230). Recupera el producto con `get_object_or_404`, restringe edición a roles permitidos y reutiliza `ProductForm` para persistir cambios. Vuelve a marcar productos de proveedores como pendientes tras editar.
+- Eliminación — función `product_delete_ajax` (`production/views.py`, L233-L253). Restringe a peticiones AJAX POST, valida permisos de eliminación y responde JSON para que la interfaz actualice la tabla sin recargar.
+- Validaciones clave del formulario — método `clean()` en `ProductForm` (`production/forms.py`, L100-L131) asegura valores no negativos, IVA entre 0-100, mes de vencimiento válido y stock máximo no menor al mínimo.
+- Confirmación visual — script SweetAlert2 incrustado en `templates/production/products_list.html` (`L175-L254`) captura clic en eliminar, lanza la alerta y realiza la petición fetch con CSRF.
+- Exportación a Excel — ruta `export_inventory_excel` (`production/inventory_views.py`, L253-L399) genera un libro con hojas de productos, usuarios por rol y movimientos, disponible desde el botón “Exportar Excel” del listado (`templates/production/products_list.html`, L11-L13).
+
+CRUD DE MOVIMIENTOS DE INVENTARIO (aplicación `production`)
+-----------------------------------------------------------
+- Listado — función `movimientos_list` (`production/inventory_views.py`, L62-L144). Aplica filtros por cadena, tipo y rango de fechas, ordena por fecha descendente, usa `Paginator` y pasa opciones de tipo al template `templates/production/movimientos_list.html`.
+- Creación — función `movimiento_create` (`production/inventory_views.py`, L147-L180). Limita el acceso a roles administrativos, instancia `MovimientoInventarioForm` (`production/inventory_forms.py`, L9-L123), agrega el usuario creador y normaliza la fecha antes de guardar.
+- Edición — función `movimiento_edit` (`production/inventory_views.py`, L183-L230). Solo disponible para administradores y gerentes; vuelve a guardar campos de solo lectura manualmente para conservar su valor original.
+- Eliminación — función `movimiento_delete` (`production/inventory_views.py`, L233-L250). Requiere rol administrador o gerente, borra el registro y usa mensajes flash para informar el resultado.
+- Validaciones en formulario — `MovimientoInventarioForm.clean_cantidad` y `clean` (`production/inventory_forms.py`, L105-L122) impiden cantidades ≤ 0 y exigen proveedor asociado en movimientos de ingreso. Los `queryset` iniciales limitan productos, proveedores y bodegas a elementos activos (L78-L95).
+- Acción Eliminar — el template `templates/production/movimientos_list.html` (`L166-L173`) incluye confirmación `onsubmit` y botones condicionados al rol; puede reemplazarse fácilmente por SweetAlert2 para homologar la experiencia.
+
+Elementos de soporte transversal
+-------------------------------
+- Redirecciones y dashboards específicos por rol en `accounts/views.ensure_user_profile` y `CustomLoginView.get_success_url` (`accounts/views.py`, L31-L114) garantizan que cada usuario llegue al panel correcto tras autenticarse.
+- La exportación dedicada de usuarios `export_users_excel` (`accounts/views.py`, L260-L329) complementa los informes requeridos para la defensa del módulo CRUD.
+- El perfil de usuario (`accounts/views.profile_view`, L197-L225) permite actualizar datos, teléfono y avatar mediante formularios `UserUpdateForm` y `UserProfileForm`, manteniendo la integridad de la información asociada a los CRUD principales.
+

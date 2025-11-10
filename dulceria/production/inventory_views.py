@@ -11,7 +11,7 @@ from django.utils import timezone
 from datetime import datetime, date
 from .models import MovimientoInventario, Bodega, Product, Proveedor
 from .inventory_forms import MovimientoInventarioForm
-from .views import get_user_role
+from .views import get_user_role, get_pagination_per_page
 from django.http import HttpResponse
 from openpyxl import Workbook
 from accounts.models import UserProfile
@@ -23,7 +23,7 @@ def inventory_dashboard(request):
     role = get_user_role(request)
     
     # Solo usuarios autorizados pueden acceder
-    if role not in ['admin', 'manager', 'employee']:
+    if role not in ['admin', 'manager']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('dashboard')
     
@@ -115,7 +115,7 @@ def movimientos_list(request):
     movimientos = movimientos.order_by('-fecha', '-created_at')
     
     # Paginación
-    per_page = request.GET.get('per_page', 25)
+    per_page = get_pagination_per_page(request, session_key='movimientos_per_page', default=25)
     paginator = Paginator(movimientos, per_page)
     page = request.GET.get('page', 1)
     

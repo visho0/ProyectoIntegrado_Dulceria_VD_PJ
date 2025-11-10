@@ -73,12 +73,12 @@
     <div class="card mb-3">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-4 col-lg-3">
                     <label for="q" class="form-label">Buscar</label>
                     <input type="text" class="form-control" id="q" name="q" value="{{ q }}" 
                            placeholder="SKU, producto, proveedor, doc. ref...">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3 col-lg-2">
                     <label for="tipo" class="form-label">Tipo</label>
                     <select class="form-select" id="tipo" name="tipo">
                         <option value="">Todos</option>
@@ -89,15 +89,23 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3 col-lg-2">
                     <label for="fecha_desde" class="form-label">Desde</label>
                     <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3 col-lg-2">
                     <label for="fecha_hasta" class="form-label">Hasta</label>
                     <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-md-3 col-lg-2">
+                    <label for="per_page" class="form-label">Elementos por página</label>
+                    <select class="form-select" id="per_page" name="per_page" onchange="this.form.submit()">
+                        {% for option in per_page_options %}
+                            <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-1 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-search"></i> Buscar
                     </button>
@@ -160,12 +168,13 @@
                                     <td>{{ mov.doc_referencia|default:"—" }}</td>
                                     <td>
                                         {% if user_role == 'admin' or user_role == 'manager' %}
-                                            <a href="{% url 'movimiento_edit' mov.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{% url 'movimiento_edit' mov.pk %}" class="btn btn-sm btn-outline-primary me-1 mb-1">
                                                 <i class="bi bi-pencil"></i> Editar
                                             </a>
-                                            <form method="post" action="{% url 'movimiento_delete' mov.pk %}" 
-                                                  class="d-inline" 
-                                                  onsubmit="return confirm('¿Estás seguro de eliminar este movimiento?');">
+                                            <form method="post"
+                                                  action="{% url 'movimiento_delete' mov.pk %}"
+                                                  class="d-inline form-delete"
+                                                  data-mov-info="{{ mov.get_tipo_display }} · {{ mov.producto.sku|default:'sin SKU' }}">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="bi bi-trash"></i> Eliminar
@@ -185,7 +194,7 @@
                         <ul class="pagination justify-content-center">
                             {% if movimientos.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ movimientos.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                    <a class="page-link" href="?page={{ movimientos.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">
                                         Anterior
                                     </a>
                                 </li>
@@ -199,7 +208,7 @@
                             
                             {% if movimientos.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ movimientos.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                    <a class="page-link" href="?page={{ movimientos.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">
                                         Siguiente
                                     </a>
                                 </li>
@@ -219,3 +228,29 @@
 {% comment %} Export functionality handled server-side; script removed {% endcomment %}
 {% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('submit', async (event) => {
+  const form = event.target;
+  if (!form.classList.contains('form-delete')) {
+    return;
+  }
+  event.preventDefault();
+  const detalle = form.dataset.movInfo || 'el movimiento';
+  const result = await Swal.fire({
+    title: `¿Eliminar ${detalle}?`,
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  });
+  if (result.isConfirmed) {
+    form.submit();
+  }
+});
+</script>
+{% endblock %}

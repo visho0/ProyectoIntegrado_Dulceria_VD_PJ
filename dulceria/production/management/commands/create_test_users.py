@@ -1,7 +1,9 @@
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from organizations.models import Organization
 from accounts.models import UserProfile
+from production.models import Product, MovimientoInventario
 
 
 class Command(BaseCommand):
@@ -31,6 +33,26 @@ class Command(BaseCommand):
         admin_group, created = Group.objects.get_or_create(name='admin')
         manager_group, created = Group.objects.get_or_create(name='manager')
         employee_group, created = Group.objects.get_or_create(name='employee')
+
+        # Configurar permisos para los grupos
+        product_ct = ContentType.objects.get_for_model(Product)
+        movimiento_ct = ContentType.objects.get_for_model(MovimientoInventario)
+
+        product_perms = Permission.objects.filter(content_type=product_ct, codename__in=[
+            'add_product', 'change_product', 'delete_product', 'view_product'
+        ])
+        movimiento_perms = Permission.objects.filter(content_type=movimiento_ct, codename__in=[
+            'add_movimientoinventario', 'change_movimientoinventario',
+            'delete_movimientoinventario', 'view_movimientoinventario'
+        ])
+
+        manager_group.permissions.set(list(product_perms) + list(movimiento_perms))
+        employee_group.permissions.set(
+            Permission.objects.filter(
+                content_type__in=[product_ct, movimiento_ct],
+                codename__in=['view_product', 'view_movimientoinventario']
+            )
+        )
 
         # Crear usuario admin
         admin_user, created = User.objects.get_or_create(
@@ -68,11 +90,10 @@ class Command(BaseCommand):
                 'email': 'gerente@dulceria.com',
                 'first_name': 'Gerente',
                 'last_name': 'Ventas',
-                'is_staff': True  # Necesita staff para acceder al admin
+                'is_staff': False
             }
         )
         manager_user.set_password('gerente123')
-        manager_user.is_staff = True  # Asegurar que tenga acceso al admin
         manager_user.save()
         
         if created:

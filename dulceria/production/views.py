@@ -21,16 +21,20 @@ def get_user_role(request):
     return None
 
 
-def get_pagination_per_page(request):
-    """Obtener el número de elementos por página desde la sesión o parámetro"""
-    # Primero verificar si viene como parámetro
+def get_pagination_per_page(request, session_key='per_page', default=10):
+    """Obtener y persistir en sesión la cantidad de elementos por página."""
     per_page = request.GET.get('per_page')
     if per_page:
-        # Guardar en sesión
-        request.session['per_page'] = int(per_page)
-        return int(per_page)
-    # Si no, obtener de sesión
-    return request.session.get('per_page', 10)  # Por defecto 10
+        try:
+            per_page_int = int(per_page)
+        except (TypeError, ValueError):
+            per_page_int = default
+        else:
+            if per_page_int <= 0:
+                per_page_int = default
+        request.session[session_key] = per_page_int
+        return per_page_int
+    return request.session.get(session_key, default)
 
 
 @login_required
@@ -125,7 +129,7 @@ def products_list(request):
         products = products.order_by('name')
     
     # Obtener elementos por página
-    per_page = get_pagination_per_page(request)
+    per_page = get_pagination_per_page(request, session_key='products_per_page', default=10)
     
     # Paginación
     paginator = Paginator(products, per_page)
@@ -154,10 +158,9 @@ def product_create(request):
     """Crear nuevo producto"""
     role = get_user_role(request)
     
-    # Verificar permiso solo si está asignado, sino permitir acceso
-    if not (request.user.is_staff or request.user.has_perm('production.add_product')):
-        # Si no tiene permiso explícito pero es staff o tiene perfil, permitir acceso
-        if not (hasattr(request.user, 'userprofile') and role in ['admin', 'manager', 'employee', 'proveedor']):
+    allowed_roles = {'admin', 'manager', 'proveedor'}
+    if not request.user.has_perm('production.add_product'):
+        if role not in allowed_roles:
             messages.error(request, 'No tienes permiso para agregar productos.')
             return redirect('products_list')
     
@@ -192,8 +195,8 @@ def product_edit(request, pk):
     """Editar producto existente"""
     # Verificar permiso solo si está asignado, sino permitir acceso según rol
     role = get_user_role(request)
-    if not (request.user.is_staff or request.user.has_perm('production.change_product')):
-        if role not in ['admin', 'manager', 'proveedor']:
+    if not request.user.has_perm('production.change_product'):
+        if role not in {'admin', 'manager', 'proveedor'}:
             messages.error(request, 'No tienes permiso para editar productos.')
             return redirect('products_list')
     
@@ -236,8 +239,8 @@ def product_delete_ajax(request, pk):
     """Elimina un producto y responde JSON para que el frontend actualice la UI sin recargar"""
     # Verificar permiso solo si está asignado, sino permitir acceso según rol
     role = get_user_role(request)
-    if not (request.user.is_staff or request.user.has_perm('production.delete_product')):
-        if role not in ['admin', 'manager']:
+    if not request.user.has_perm('production.delete_product'):
+        if role not in {'admin', 'manager'}:
             return JsonResponse({"ok": False, "message": "No tienes permiso para eliminar productos."}, status=403)
     
     # Verificar que la petición sea AJAX
@@ -341,7 +344,7 @@ def tienda_online(request):
         products = products.order_by('name')
     
     # Obtener elementos por página
-    per_page = get_pagination_per_page(request)
+    per_page = get_pagination_per_page(request, session_key='tienda_per_page', default=10)
     
     # Paginación
     paginator = Paginator(products, per_page)
@@ -491,8 +494,8 @@ def admin_panel(request):
     
     role = get_user_role(request)
     
-    # Solo admin y gerente pueden acceder
-    if not (request.user.is_staff or role in ['admin', 'manager']):
+    # Solo administradores habilitados pueden acceder
+    if role != 'admin' and not request.user.is_superuser:
         messages.error(request, 'No tienes permiso para acceder a la administración.')
         return redirect('dashboard')
     

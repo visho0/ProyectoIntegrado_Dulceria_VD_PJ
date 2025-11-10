@@ -1,6 +1,6 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.db.models import F, Count
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -28,9 +28,74 @@ def _get_default_organization(preferred_names=None):
     return Organization.objects.create(name='Dulcería Central')
 
 
+def _sync_user_group(user, role):
+    """Asigna el grupo de permisos acorde al rol y limpia asociaciones previas."""
+    role_group_map = {
+        'admin': 'admin',
+        'manager': 'manager',
+        'employee': 'employee',
+    }
+    role_permissions_map = {
+        'admin': [
+            ('production', 'add_product'),
+            ('production', 'change_product'),
+            ('production', 'delete_product'),
+            ('production', 'view_product'),
+            ('production', 'add_movimientoinventario'),
+            ('production', 'change_movimientoinventario'),
+            ('production', 'delete_movimientoinventario'),
+            ('production', 'view_movimientoinventario'),
+        ],
+        'manager': [
+            ('production', 'add_product'),
+            ('production', 'change_product'),
+            ('production', 'delete_product'),
+            ('production', 'view_product'),
+            ('production', 'add_movimientoinventario'),
+            ('production', 'change_movimientoinventario'),
+            ('production', 'delete_movimientoinventario'),
+            ('production', 'view_movimientoinventario'),
+        ],
+        'employee': [
+            ('production', 'view_product'),
+            ('production', 'view_movimientoinventario'),
+        ],
+    }
+    target_group_name = role_group_map.get(role)
+    relevant_group_names = set(role_group_map.values())
+
+    if target_group_name:
+        target_group, _ = Group.objects.get_or_create(name=target_group_name)
+        desired_permissions = []
+        for app_label, codename in role_permissions_map.get(role, []):
+            try:
+                perm = Permission.objects.get(content_type__app_label=app_label, codename=codename)
+            except Permission.DoesNotExist:
+                continue
+            desired_permissions.append(perm)
+        if desired_permissions:
+            current_perm_ids = set(target_group.permissions.values_list('id', flat=True))
+            desired_perm_ids = {perm.id for perm in desired_permissions}
+            if current_perm_ids != desired_perm_ids:
+                target_group.permissions.set(desired_permissions)
+        elif target_group.permissions.exists():
+            target_group.permissions.clear()
+        if not user.groups.filter(pk=target_group.pk).exists():
+            user.groups.add(target_group)
+    else:
+        target_group = None
+
+    # Remover otros grupos exclusivos si el rol cambió
+    for group in user.groups.filter(name__in=relevant_group_names):
+        if target_group is None or group.name != target_group.name:
+            user.groups.remove(group)
+
+
 def ensure_user_profile(user):
     if hasattr(user, 'userprofile'):
-        return user.userprofile
+        profile = user.userprofile
+        _sync_user_group(user, profile.role)
+        return profile
 
     if hasattr(user, 'cliente'):
         role = 'cliente'
@@ -54,6 +119,7 @@ def ensure_user_profile(user):
         mfa_enabled=False,
         sesiones_activas=0
     )
+    _sync_user_group(user, role)
     return profile
 
 
