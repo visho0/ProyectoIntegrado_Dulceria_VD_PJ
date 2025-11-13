@@ -165,7 +165,7 @@ SESSION_SAVE_EVERY_REQUEST = False
 
 # Seguridad de las cookies
 # En desarrollo: False, en producción con HTTPS: True
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = False
 
 # Solo enviar la cookie en el mismo sitio (protección CSRF)
 # Lax por defecto en Django
