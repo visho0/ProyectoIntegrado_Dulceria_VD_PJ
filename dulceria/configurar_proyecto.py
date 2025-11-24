@@ -211,9 +211,25 @@ def collect_static():
     """Recolectar archivos estáticos"""
     print_step(5, "Recolectando Archivos Estáticos")
     
+    # Verificar que STATICFILES_DIRS esté configurado
+    try:
+        import django
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dulceria.settings')
+        django.setup()
+        from django.conf import settings
+        
+        if not hasattr(settings, 'STATICFILES_DIRS') or not settings.STATICFILES_DIRS:
+            print_error("STATICFILES_DIRS no está configurado en settings.py")
+            print_info("Agrega: STATICFILES_DIRS = [BASE_DIR / 'static']")
+            return False
+        else:
+            print_info(f"STATICFILES_DIRS configurado: {settings.STATICFILES_DIRS}")
+    except Exception as e:
+        print_info(f"No se pudo verificar STATICFILES_DIRS: {str(e)}")
+    
     # Recolectar archivos estáticos (necesario en producción)
     result = run_command(
-        f"{sys.executable} manage.py collectstatic --noinput",
+        f"{sys.executable} manage.py collectstatic --noinput --clear",
         "Recolección de archivos estáticos"
     )
     
