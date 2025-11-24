@@ -151,16 +151,37 @@ def load_initial_data():
             else:
                 print_info(f"Fixture no encontrado (opcional): {fixture}")
     
-    # Verificar que los productos se cargaron correctamente
+    # Verificar que los productos se cargaron correctamente y aprobarlos si es necesario
     if result:
         try:
             import django
             os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dulceria.settings')
             django.setup()
             from production.models import Product
+            from django.contrib.auth.models import User
+            from django.utils import timezone
+            
             product_count = Product.objects.count()
             if product_count > 0:
                 print_success(f"Productos cargados: {product_count}")
+                
+                # Aprobar automáticamente los productos iniciales que estén pendientes
+                productos_pendientes = Product.objects.filter(estado_aprobacion='PENDIENTE')
+                if productos_pendientes.exists():
+                    # Obtener el usuario admin para aprobar
+                    try:
+                        admin_user = User.objects.filter(is_superuser=True).first()
+                        if admin_user:
+                            productos_pendientes.update(
+                                estado_aprobacion='APROBADO',
+                                aprobado_por=admin_user,
+                                fecha_aprobacion=timezone.now()
+                            )
+                            print_success(f"Productos aprobados automáticamente: {productos_pendientes.count()}")
+                        else:
+                            print_info("No se encontró usuario admin para aprobar productos")
+                    except Exception as e:
+                        print_info(f"No se pudieron aprobar productos automáticamente: {str(e)}")
             else:
                 print_error("No se cargaron productos")
                 result = False
