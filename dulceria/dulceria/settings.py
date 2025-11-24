@@ -76,10 +76,17 @@ DATABASES = {
         'HOST': os.getenv("DB_HOST"),
         'PORT': os.getenv("DB_PORT", "3306"),
         'OPTIONS': {
-            'ssl': {'ca': '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'},
+            # SSL solo si el certificado existe (AWS RDS)
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
+
+# Configurar SSL solo si el certificado existe (para AWS RDS)
+import os.path
+ssl_cert_path = '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'
+if os.path.exists(ssl_cert_path):
+    DATABASES['default']['OPTIONS']['ssl'] = {'ca': ssl_cert_path}
 
 # ==========================
 # IDIOMA Y ZONA HORARIA

@@ -109,33 +109,51 @@ def load_initial_data():
     
     if os.path.exists(fixtures_file):
         print_info(f"Archivo de fixtures encontrado: {fixtures_file}")
-        return run_command(
+        result = run_command(
             f"{sys.executable} manage.py loaddata {fixtures_file}",
             "Carga de datos iniciales"
         )
     else:
-        print_error(f"No se encontró el archivo: {fixtures_file}")
+        print_info(f"No se encontró el archivo: {fixtures_file}")
         print_info("Intentando cargar fixtures individuales...")
         
-        # Cargar fixtures existentes uno por uno
+        # Cargar fixtures existentes uno por uno en orden correcto
         fixtures = [
-            "fixtures/00_catalogo_categoria_producto_es.json",
-            "fixtures/01_catalogo_alertas_es.json",
-            "fixtures/02_catalogo_producto_alert_es.json",
-            "fixtures/03_organizacion_zona_dispositivo_es.json",
-            "fixtures/04_mediciones_ejemplo_es.json",
+            "fixtures/03_organizacion_zona_dispositivo_es.json",  # Primero organizaciones
+            "fixtures/00_catalogo_categoria_producto_es.json",   # Luego categorías y productos
+            "fixtures/01_catalogo_alertas_es.json",               # Después alertas
+            "fixtures/02_catalogo_producto_alert_es.json",        # Relaciones producto-alerta
+            "fixtures/04_mediciones_ejemplo_es.json",              # Por último mediciones
         ]
         
-        success = True
+        result = True
         for fixture in fixtures:
             if os.path.exists(fixture):
                 if not run_command(
                     f"{sys.executable} manage.py loaddata {fixture}",
                     f"Cargando {os.path.basename(fixture)}"
                 ):
-                    success = False
-        
-        return success
+                    result = False
+            else:
+                print_info(f"Fixture no encontrado (opcional): {fixture}")
+    
+    # Verificar que los productos se cargaron correctamente
+    if result:
+        try:
+            import django
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dulceria.settings')
+            django.setup()
+            from production.models import Product
+            product_count = Product.objects.count()
+            if product_count > 0:
+                print_success(f"Productos cargados: {product_count}")
+            else:
+                print_error("No se cargaron productos")
+                result = False
+        except Exception as e:
+            print_error(f"Error al verificar productos: {str(e)}")
+    
+    return result
 
 def create_test_users():
     """Crear usuarios de prueba"""
@@ -200,10 +218,43 @@ def verify_installation():
         else:
             print_success("Todos los usuarios tienen perfil")
         
+        # Verificar productos y sus imágenes
+        if products > 0:
+            products_with_images = Product.objects.exclude(
+                imagen__isnull=True
+            ).exclude(imagen='').count()
+            products_without_images = products - products_with_images
+            
+            print_info(f"Productos con imágenes: {products_with_images}")
+            if products_without_images > 0:
+                print_info(f"Productos sin imágenes: {products_without_images}")
+            
+            # Verificar que las imágenes físicas existan (si están en local)
+            if os.path.exists("media/productos"):
+                products_with_file = 0
+                products_without_file = 0
+                for product in Product.objects.exclude(imagen__isnull=True).exclude(imagen=''):
+                    image_path = os.path.join("media", product.imagen.name if hasattr(product.imagen, 'name') else str(product.imagen))
+                    if os.path.exists(image_path):
+                        products_with_file += 1
+                    else:
+                        products_without_file += 1
+                        print_info(f"⚠️  Imagen no encontrada: {image_path}")
+                
+                if products_with_file > 0:
+                    print_success(f"Imágenes físicas encontradas: {products_with_file}")
+                if products_without_file > 0:
+                    print_info(f"⚠️  Imágenes físicas faltantes: {products_without_file} (esto es normal en AWS si usas S3)")
+        else:
+            print_error("No hay productos cargados")
+            return False
+        
         return True
         
     except Exception as e:
         print_error(f"Error en la verificación: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def show_final_instructions():

@@ -30,6 +30,8 @@
       "price": "45.00",
       "stock": 50,
       "is_active": true,
+      "imagen": "",
+      "stock_minimo": 10,
       "created_at": "2025-01-01T10:00:00",
       "updated_at": "2025-01-01T10:00:00"
     }
@@ -45,6 +47,8 @@
       "price": "35.00",
       "stock": 30,
       "is_active": true,
+      "imagen": "",
+      "stock_minimo": 10,
       "created_at": "2025-01-01T10:00:00",
       "updated_at": "2025-01-01T10:00:00"
     }
@@ -60,6 +64,8 @@
       "price": "65.00",
       "stock": 25,
       "is_active": true,
+      "imagen": "productos/b1c17abccb139825534d82d67f6f2847.jpg",
+      "stock_minimo": 10,
       "created_at": "2025-01-01T10:00:00",
       "updated_at": "2025-01-01T10:00:00"
     }
