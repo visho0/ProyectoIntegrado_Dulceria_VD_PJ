@@ -225,6 +225,123 @@ def collect_static():
     
     return True  # No es crítico, continuar aunque falle
 
+def verify_static_files():
+    """Verificar archivos estáticos y logos"""
+    print_info("\nVerificando archivos estáticos y logos...")
+    
+    try:
+        from django.conf import settings
+        
+        # Verificar STATIC_ROOT
+        static_root = settings.STATIC_ROOT
+        static_root_exists = os.path.exists(static_root)
+        
+        if static_root_exists:
+            print_success(f"STATIC_ROOT existe: {static_root}")
+        else:
+            print_error(f"STATIC_ROOT no existe: {static_root}")
+            print_info("Ejecuta: python manage.py collectstatic")
+            return False
+        
+        # Verificar logos en static/img
+        static_img_dir = os.path.join(settings.BASE_DIR, 'static', 'img')
+        staticfiles_img_dir = os.path.join(static_root, 'img')
+        
+        logos_esperados = [
+            'LOGO-Lilis-rojo.png',
+            'Logo-lilis-dorado.png',
+            'lilis_productos.png'
+        ]
+        
+        logos_ok = 0
+        logos_faltantes = []
+        
+        for logo in logos_esperados:
+            # Verificar en static/img (origen)
+            ruta_static = os.path.join(static_img_dir, logo)
+            existe_static = os.path.exists(ruta_static)
+            
+            # Verificar en staticfiles/img (destino después de collectstatic)
+            ruta_staticfiles = os.path.join(staticfiles_img_dir, logo)
+            existe_staticfiles = os.path.exists(ruta_staticfiles) if os.path.exists(staticfiles_img_dir) else False
+            
+            if existe_staticfiles:
+                logos_ok += 1
+                print_success(f"Logo '{logo}' encontrado en staticfiles")
+            elif existe_static:
+                logos_faltantes.append(logo)
+                print_info(f"⚠️  Logo '{logo}' existe en static pero no en staticfiles")
+            else:
+                logos_faltantes.append(logo)
+                print_error(f"Logo '{logo}' no encontrado")
+        
+        if logos_faltantes:
+            print_info(f"\n⚠️  {len(logos_faltantes)} logos faltantes en staticfiles")
+            print_info("Ejecuta: python manage.py collectstatic --noinput")
+            return False
+        else:
+            print_success(f"Todos los logos están disponibles ({logos_ok}/{len(logos_esperados)})")
+            return True
+            
+    except Exception as e:
+        print_error(f"Error al verificar archivos estáticos: {str(e)}")
+        return False
+
+def verify_product_images():
+    """Verificar imágenes de productos"""
+    print_info("\nVerificando imágenes de productos...")
+    
+    try:
+        from production.models import Product
+        from django.conf import settings
+        
+        products = Product.objects.all()
+        products_count = products.count()
+        
+        if products_count == 0:
+            print_info("No hay productos para verificar")
+            return True
+        
+        products_with_images = 0
+        products_without_images = 0
+        products_with_file = 0
+        products_without_file = 0
+        
+        for product in products:
+            if product.imagen and product.imagen.name:
+                products_with_images += 1
+                
+                # Verificar si el archivo existe físicamente
+                try:
+                    if hasattr(product.imagen, 'path'):
+                        ruta_fisica = product.imagen.path
+                        if os.path.exists(ruta_fisica):
+                            products_with_file += 1
+                        else:
+                            products_without_file += 1
+                            print_info(f"⚠️  Imagen no encontrada para '{product.name}': {ruta_fisica}")
+                except Exception as e:
+                    products_without_file += 1
+                    print_info(f"⚠️  Error al verificar imagen de '{product.name}': {str(e)}")
+            else:
+                products_without_images += 1
+        
+        print_info(f"Productos con imágenes en BD: {products_with_images}")
+        print_info(f"Productos sin imágenes: {products_without_images}")
+        
+        if products_with_file > 0:
+            print_success(f"Imágenes físicas encontradas: {products_with_file}")
+        
+        if products_without_file > 0:
+            print_info(f"⚠️  Imágenes físicas faltantes: {products_without_file}")
+            print_info("(Esto es normal en AWS si usas S3, o si las imágenes no se han subido)")
+        
+        return True
+        
+    except Exception as e:
+        print_error(f"Error al verificar imágenes de productos: {str(e)}")
+        return False
+
 def verify_installation():
     """Verificar que todo esté correcto"""
     print_step(6, "Verificando Instalación")
@@ -263,37 +380,19 @@ def verify_installation():
         else:
             print_success("Todos los usuarios tienen perfil")
         
-        # Verificar productos y sus imágenes
-        if products > 0:
-            products_with_images = Product.objects.exclude(
-                imagen__isnull=True
-            ).exclude(imagen='').count()
-            products_without_images = products - products_with_images
-            
-            print_info(f"Productos con imágenes: {products_with_images}")
-            if products_without_images > 0:
-                print_info(f"Productos sin imágenes: {products_without_images}")
-            
-            # Verificar que las imágenes físicas existan (si están en local)
-            if os.path.exists("media/productos"):
-                products_with_file = 0
-                products_without_file = 0
-                for product in Product.objects.exclude(imagen__isnull=True).exclude(imagen=''):
-                    image_path = os.path.join("media", product.imagen.name if hasattr(product.imagen, 'name') else str(product.imagen))
-                    if os.path.exists(image_path):
-                        products_with_file += 1
-                    else:
-                        products_without_file += 1
-                        print_info(f"⚠️  Imagen no encontrada: {image_path}")
-                
-                if products_with_file > 0:
-                    print_success(f"Imágenes físicas encontradas: {products_with_file}")
-                if products_without_file > 0:
-                    print_info(f"⚠️  Imágenes físicas faltantes: {products_without_file} (esto es normal en AWS si usas S3)")
-        else:
+        # Verificar productos
+        if products == 0:
             print_error("No hay productos cargados")
             return False
         
+        # Verificar archivos estáticos y logos
+        static_ok = verify_static_files()
+        
+        # Verificar imágenes de productos
+        images_ok = verify_product_images()
+        
+        # La verificación es exitosa si hay productos y los usuarios tienen perfiles
+        # Los logos e imágenes son advertencias, no errores críticos
         return True
         
     except Exception as e:
