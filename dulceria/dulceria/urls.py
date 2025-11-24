@@ -27,18 +27,21 @@ urlpatterns = [
     path("", include("production.urls")),  # Vistas de productos
 ]
 
-# Servir archivos media en desarrollo y producción
-# NOTA: En producción real, deberías usar S3 o configurar Nginx/Apache para servir /media/
+# Servir archivos estáticos y media en desarrollo y producción
+# NOTA: En producción real, deberías usar S3 o configurar Nginx/Apache
+from django.views.static import serve
+from django.urls import re_path
+
 if settings.DEBUG:
+    # En desarrollo, usar el método estándar
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 else:
-    # En producción, servir media desde Django (solución temporal)
-    # Para producción real, usa S3 o configura el servidor web
-    from django.views.static import serve
-    from django.urls import re_path
-    
+    # En producción, servir estáticos y media desde Django (solución temporal)
+    # Para producción real, usa S3 o configura el servidor web (Nginx/Apache)
     urlpatterns += [
         re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
     ]
 
 handler404 = 'dulceria.views.custom_404'

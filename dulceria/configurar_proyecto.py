@@ -208,12 +208,22 @@ def create_test_users():
     return result
 
 def collect_static():
-    """Recolectar archivos estáticos (opcional)"""
+    """Recolectar archivos estáticos"""
     print_step(5, "Recolectando Archivos Estáticos")
     
-    # Solo en producción, en desarrollo no es necesario
-    print_info("Omitiendo en modo desarrollo")
-    return True
+    # Recolectar archivos estáticos (necesario en producción)
+    result = run_command(
+        f"{sys.executable} manage.py collectstatic --noinput",
+        "Recolección de archivos estáticos"
+    )
+    
+    if result:
+        print_success("Archivos estáticos recolectados correctamente")
+    else:
+        print_info("Advertencia: No se pudieron recolectar archivos estáticos")
+        print_info("Esto puede ser normal si no hay archivos estáticos personalizados")
+    
+    return True  # No es crítico, continuar aunque falle
 
 def verify_installation():
     """Verificar que todo esté correcto"""
