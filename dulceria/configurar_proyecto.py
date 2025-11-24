@@ -107,15 +107,29 @@ def load_initial_data():
     # Verificar si existe el archivo de fixtures
     fixtures_file = "fixtures/datos_iniciales.json"
     
+    # Intentar cargar el archivo principal primero
+    result = False
     if os.path.exists(fixtures_file):
         print_info(f"Archivo de fixtures encontrado: {fixtures_file}")
+        print_info("Intentando cargar datos iniciales...")
         result = run_command(
             f"{sys.executable} manage.py loaddata {fixtures_file}",
             "Carga de datos iniciales"
         )
-    else:
-        print_info(f"No se encontró el archivo: {fixtures_file}")
-        print_info("Intentando cargar fixtures individuales...")
+        
+        # Si falla por encoding, intentar con fixtures individuales
+        if not result:
+            print_error("Error al cargar datos_iniciales.json (posible problema de encoding)")
+            print_info("Intentando cargar fixtures individuales como alternativa...")
+            result = False  # Continuar con fixtures individuales
+        else:
+            print_success("Datos iniciales cargados correctamente")
+    
+    # Si el archivo principal no existe o falló, usar fixtures individuales
+    if not result:
+        if not os.path.exists(fixtures_file):
+            print_info(f"No se encontró el archivo: {fixtures_file}")
+        print_info("Cargando fixtures individuales...")
         
         # Cargar fixtures existentes uno por uno en orden correcto
         fixtures = [
