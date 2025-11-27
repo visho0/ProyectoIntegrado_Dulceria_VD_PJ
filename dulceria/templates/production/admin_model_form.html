@@ -4,6 +4,27 @@
 {% block title %}{{ action }} {{ model_name }} - Panel de Administración{% endblock %}
 
 {% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .form-control:focus {
+        border-color: var(--lilis-red);
+        box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.25);
+    }
+</style>
+
 <div class="container mt-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-{% if action == 'Crear' %}plus-circle{% else %}pencil{% endif %}"></i> {{ action }} {{ model_name }}</h2>
@@ -14,7 +35,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="admin-form" class="form-edit-admin">
                 {% csrf_token %}
                 
                 {% if form.non_field_errors %}
@@ -23,29 +44,75 @@
                     </div>
                 {% endif %}
                 
-                {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">
-                            {{ field.label }}
-                            {% if field.field.required %}
-                                <span class="text-danger">*</span>
-                            {% endif %}
-                        </label>
-                        {{ field }}
-                        {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                        {% endif %}
-                        {% if field.errors %}
-                            <div class="text-danger small">
-                                {% for error in field.errors %}
-                                    <div>{{ error }}</div>
-                                {% endfor %}
+                <div class="row">
+                    {% for field in form %}
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    {{ field }}
+                                    <label for="{{ field.id_for_label }}" class="form-check-label">
+                                        {{ field.label }}
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {% if field.help_text %}
+                                        <small class="form-text text-muted d-block">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in field.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% elif field.field.widget.input_type == 'textarea' or 'textarea' in field.field.widget.template_name %}
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in field.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in field.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         {% endif %}
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
                 
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between mt-4">
                     <a href="{% url 'admin_model_list' app_label model_name_slug %}" class="btn btn-secondary">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </a>
@@ -57,14 +124,39 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    .form-control, .form-select {
-        margin-bottom: 0.5rem;
-    }
-    .form-check-input {
-        margin-top: 0.5rem;
-    }
-</style>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// SweetAlert2 para confirmación de guardado
+document.addEventListener('submit', async (event) => {
+  const form = event.target;
+  if (!form.classList.contains('form-edit-admin')) {
+    return;
+  }
+  event.preventDefault();
+  const action = '{{ action }}';
+  const modelName = '{{ model_name }}';
+  const objName = '{% if object %}{{ object }}{% else %}nuevo registro{% endif %}';
+  
+  const result = await Swal.fire({
+    title: `¿${action} ${modelName}?`,
+    text: action === 'Crear' 
+      ? `Se creará un nuevo ${modelName.toLowerCase()}.`
+      : `Se guardarán los cambios en "${objName}".`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#0d6efd",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: `Sí, ${action.toLowerCase()}`,
+    cancelButtonText: "Cancelar"
+  });
+  
+  if (result.isConfirmed) {
+    form.submit();
+  }
+});
+</script>
 {% endblock %}
 

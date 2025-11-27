@@ -335,3 +335,24 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         self.fields['email'].label = 'Correo Electrónico'
         self.fields['email'].help_text = 'Ingresa el correo electrónico asociado a tu cuenta.'
 
+
+from django.contrib.auth.forms import SetPasswordForm
+
+
+class RequiredPasswordChangeForm(SetPasswordForm):
+    """Formulario para cambio de contraseña obligatorio"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['new_password1'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Nueva contraseña',
+            'autocomplete': 'new-password',
+        })
+        self.fields['new_password2'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Confirmar nueva contraseña',
+            'autocomplete': 'new-password',
+        })
+        self.fields['new_password1'].label = 'Nueva Contraseña'
+        self.fields['new_password2'].label = 'Confirmar Nueva Contraseña'
+        self.fields['new_password1'].help_text = 'Tu contraseña debe contener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales.'

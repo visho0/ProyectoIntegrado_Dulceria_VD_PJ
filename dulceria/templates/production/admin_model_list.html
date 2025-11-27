@@ -11,6 +11,9 @@
             <a href="{% url 'admin_panel' %}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Volver
             </a>
+            <a href="{% url 'admin_model_export_excel' app_label model_name_slug %}{% if search_query %}?q={{ search_query }}{% endif %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </a>
             {% if has_add_permission %}
             <a href="{% url 'admin_model_create' app_label model_name_slug %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Agregar
@@ -22,13 +25,13 @@
     <!-- Búsqueda -->
     <div class="card mb-3">
         <div class="card-body">
-            <form method="get" class="row g-3">
+            <form method="get" id="search-form" class="row g-3">
                 <div class="col-md-8">
-                    <input type="text" class="form-control" name="q" value="{{ search_query }}" 
-                           placeholder="Buscar...">
+                    <input type="text" class="form-control" id="search-input" name="q" value="{{ search_query }}" 
+                           placeholder="Buscar en tiempo real...">
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" name="per_page">
+                    <select class="form-select" name="per_page" id="per-page-select">
                         <option value="10" {% if per_page == 10 %}selected{% endif %}>10 por página</option>
                         <option value="25" {% if per_page == 25 %}selected{% endif %}>25 por página</option>
                         <option value="50" {% if per_page == 50 %}selected{% endif %}>50 por página</option>
@@ -70,14 +73,15 @@
                                         <td>
                                             {% if has_change_permission %}
                                                 <a href="{% url 'admin_model_edit' app_label model_name_slug row.obj.pk %}" 
-                                                   class="btn btn-sm btn-outline-primary">
+                                                   class="btn btn-sm btn-outline-primary btn-edit-admin"
+                                                   data-obj-name="{{ row.obj }}">
                                                     <i class="bi bi-pencil"></i> Editar
                                                 </a>
                                             {% endif %}
                                             {% if has_delete_permission %}
                                                 <form method="post" action="{% url 'admin_model_delete' app_label model_name_slug row.obj.pk %}" 
-                                                      class="d-inline" 
-                                                      onsubmit="return confirm('¿Estás seguro de eliminar este objeto?');">
+                                                      class="d-inline form-delete-admin" 
+                                                      data-obj-name="{{ row.obj }}">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         <i class="bi bi-trash"></i> Eliminar
@@ -128,5 +132,83 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Búsqueda en tiempo real
+let searchTimeout;
+const searchInput = document.getElementById('search-input');
+const searchForm = document.getElementById('search-form');
+
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        // Esperar 300ms después de que el usuario deje de escribir
+        searchTimeout = setTimeout(function() {
+            if (query.length >= 2 || query.length === 0) {
+                // Actualizar URL y recargar
+                const url = new URL(window.location);
+                if (query) {
+                    url.searchParams.set('q', query);
+                } else {
+                    url.searchParams.delete('q');
+                }
+                url.searchParams.set('page', '1'); // Resetear a primera página
+                window.location.href = url.toString();
+            }
+        }, 300);
+    });
+}
+
+// SweetAlert2 para eliminaciones
+document.addEventListener('submit', async (event) => {
+  const form = event.target;
+  if (!form.classList.contains('form-delete-admin')) {
+    return;
+  }
+  event.preventDefault();
+  const objName = form.dataset.objName || 'este objeto';
+  const result = await Swal.fire({
+    title: `¿Eliminar ${objName}?`,
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  });
+  if (result.isConfirmed) {
+    form.submit();
+  }
+});
+
+// SweetAlert2 para ediciones
+document.addEventListener('click', async (event) => {
+  const link = event.target.closest('.btn-edit-admin');
+  if (!link) {
+    return;
+  }
+  event.preventDefault();
+  const objName = link.dataset.objName || 'este objeto';
+  const result = await Swal.fire({
+    title: `¿Editar ${objName}?`,
+    text: "Se abrirá el formulario de edición.",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#0d6efd",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Sí, editar",
+    cancelButtonText: "Cancelar"
+  });
+  if (result.isConfirmed) {
+    window.location.href = link.href;
+  }
+});
+</script>
 {% endblock %}
 

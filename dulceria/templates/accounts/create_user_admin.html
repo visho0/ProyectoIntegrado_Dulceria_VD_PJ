@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear Usuario - Panel de Administración{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .form-control:focus {
+        border-color: var(--lilis-red);
+        box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.25);
+    }
+</style>
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-plus"></i> Crear Usuario</h2>
+        <a href="{% url 'admin_panel' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Panel
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <!-- Selector de tipo de usuario -->
+            <div class="mb-4">
+                <label class="form-label fw-bold">Tipo de Usuario:</label>
+                <div class="btn-group w-100" role="group">
+                    <a href="?tipo=staff" class="btn {% if tipo_usuario == 'staff' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-person-badge"></i> Personal (Admin/Gerente/Empleado)
+                    </a>
+                    <a href="?tipo=cliente" class="btn {% if tipo_usuario == 'cliente' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-person"></i> Cliente
+                    </a>
+                    <a href="?tipo=proveedor" class="btn {% if tipo_usuario == 'proveedor' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-truck"></i> Proveedor
+                    </a>
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <h6><i class="bi bi-exclamation-triangle-fill"></i> Errores en el formulario</h6>
+                <ul class="mb-0">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li><small>{{ field }}: {{ error }}</small></li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="tipo_usuario" value="{{ tipo_usuario }}">
+                
+                <div class="row">
+                    {% for field in form %}
+                        {% if field.name == 'password1' or field.name == 'password2' %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in field.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% elif field.field.widget.input_type == 'checkbox' %}
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    {{ field }}
+                                    <label for="{{ field.id_for_label }}" class="form-check-label">
+                                        {{ field.label }}
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {% if field.help_text %}
+                                        <small class="form-text text-muted d-block">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in field.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in field.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'admin_panel' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+{% if show_success_alert and user_created_info %}
+document.addEventListener('DOMContentLoaded', function() {
+    const userInfo = {
+        username: '{{ user_created_info.username|escapejs }}',
+        email: '{{ user_created_info.email|escapejs }}',
+        temporary_password: '{{ user_created_info.temporary_password|escapejs }}',
+        tipo: '{{ user_created_info.tipo|escapejs }}'
+    };
+    
+    // Crear el HTML del contenido del alert
+    const htmlContent = `
+        <div style="text-align: left;">
+            <p><strong>Usuario creado exitosamente:</strong></p>
+            <ul style="text-align: left; margin-left: 20px;">
+                <li><strong>Usuario:</strong> ${userInfo.username}</li>
+                <li><strong>Email:</strong> ${userInfo.email}</li>
+                <li><strong>Tipo:</strong> ${userInfo.tipo}</li>
+            </ul>
+            <hr>
+            <p><strong>Contraseña Temporal Generada:</strong></p>
+            <div style="background-color: #f8f9fa; border: 2px solid #C8102E; border-radius: 5px; padding: 15px; margin: 10px 0; text-align: center;">
+                <code style="font-size: 1.2rem; font-weight: bold; color: #C8102E; letter-spacing: 2px;">${userInfo.temporary_password}</code>
+            </div>
+            <button id="copy-password-btn" class="btn btn-outline-primary btn-sm" style="width: 100%; margin-top: 10px;">
+                <i class="bi bi-clipboard"></i> Copiar Contraseña
+            </button>
+            <hr>
+            <p style="font-size: 0.9rem; color: #666;">
+                <i class="bi bi-info-circle"></i> Se ha enviado un correo electrónico a <strong>${userInfo.email}</strong> con las credenciales de acceso.
+            </p>
+            <p style="font-size: 0.85rem; color: #856404; background-color: #fff3cd; padding: 10px; border-radius: 5px;">
+                <i class="bi bi-exclamation-triangle"></i> <strong>Importante:</strong> Esta contraseña es temporal. El usuario deberá cambiarla al iniciar sesión por primera vez.
+            </p>
+        </div>
+    `;
+    
+    Swal.fire({
+        title: '<i class="bi bi-check-circle-fill" style="color: #28a745;"></i> Usuario Creado Exitosamente',
+        html: htmlContent,
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#C8102E',
+        width: '600px',
+        allowOutsideClick: false,
+        didOpen: () => {
+            // Agregar funcionalidad de copiar contraseña
+            const copyBtn = document.getElementById('copy-password-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(userInfo.temporary_password).then(function() {
+                        copyBtn.innerHTML = '<i class="bi bi-check"></i> ¡Copiado!';
+                        copyBtn.classList.remove('btn-outline-primary');
+                        copyBtn.classList.add('btn-success');
+                        
+                        setTimeout(function() {
+                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copiar Contraseña';
+                            copyBtn.classList.remove('btn-success');
+                            copyBtn.classList.add('btn-outline-primary');
+                        }, 2000);
+                    }, function(err) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo copiar la contraseña: ' + err
+                        });
+                    });
+                });
+            }
+        }
+    });
+});
+{% endif %}
+</script>
+{% endblock %}
+

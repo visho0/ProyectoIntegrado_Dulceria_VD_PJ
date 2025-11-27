@@ -68,6 +68,7 @@ class UserProfile(models.Model):
     state = models.CharField(max_length=20, choices=STATE_CHOICES, default='ACTIVO', verbose_name='Estado')
     mfa_enabled = models.BooleanField(default=False, verbose_name='MFA habilitado')
     sesiones_activas = models.PositiveIntegerField(default=0, verbose_name='Sesiones activas')
+    must_change_password = models.BooleanField(default=False, verbose_name='Debe cambiar contraseña')
     area = models.CharField(max_length=120, blank=True, verbose_name='Área/Unidad')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')

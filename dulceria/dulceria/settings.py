@@ -83,10 +83,10 @@ DATABASES = {
 }
 
 # Configurar SSL solo si el certificado existe (para AWS RDS)
-import os.path
-ssl_cert_path = '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'
-if os.path.exists(ssl_cert_path):
-    DATABASES['default']['OPTIONS']['ssl'] = {'ca': ssl_cert_path}
+#import os.path
+#ssl_cert_path = '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'
+#if os.path.exists(ssl_cert_path):
+#    DATABASES['default']['OPTIONS']['ssl'] = {'ca': ssl_cert_path}
 
 # ==========================
 # IDIOMA Y ZONA HORARIA
@@ -106,3 +106,17 @@ STATICFILES_DIRS = [
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ==========================
+# CONFIGURACIÓN DE EMAIL
+# ==========================
+
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@dulceria.com')
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+SITE_NAME = os.getenv('SITE_NAME', 'Sistema de Gestión Dulcería')

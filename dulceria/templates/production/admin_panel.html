@@ -102,6 +102,18 @@
         {% endif %}
 
         <div class="mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-people"></i> Gestión de Usuarios</h5>
+                    <p class="card-text">Crear nuevos usuarios del sistema</p>
+                    <a href="{% url 'create_user_admin' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Crear Usuario
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
             <a href="/admin/" class="btn btn-outline-primary" target="_blank">
                 <i class="bi bi-box-arrow-up-right"></i> Abrir Admin de Django (Nueva Pestaña)
             </a>

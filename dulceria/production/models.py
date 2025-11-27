@@ -246,7 +246,7 @@ class ProductoProveedor(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Producto', related_name='proveedores')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, verbose_name='Proveedor', related_name='productos')
     costo = models.DecimalField(max_digits=18, decimal_places=6, validators=[MinValueValidator(0)], verbose_name='Costo')
-    lead_time = models.PositiveIntegerField(default=7, verbose_name='Lead Time (días)', help_text='Tiempo de entrega en días')
+    lead_time = models.PositiveIntegerField(default=7, verbose_name='Tiempo de Entrega (días)', help_text='Tiempo de entrega en días')
     min_lote = models.DecimalField(max_digits=18, decimal_places=6, default=Decimal('1.000000'), validators=[MinValueValidator(Decimal('0.000001'))], verbose_name='Lote mínimo')
     descuento_pct = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, validators=[MinValueValidator(0)], verbose_name='Descuento (%)')
     es_preferente = models.BooleanField(default=False, verbose_name='Proveedor Preferente para este Producto')

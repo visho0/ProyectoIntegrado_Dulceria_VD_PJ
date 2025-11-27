@@ -13,6 +13,7 @@ from django.utils import timezone
 from openpyxl import Workbook
 from organizations.models import Organization
 from .models import UserProfile
+from .admin_forms import AdminUserCreationForm, AdminClienteCreationForm, AdminProveedorCreationForm
 def _get_default_organization(preferred_names=None):
     preferred_names = preferred_names or []
     for name in preferred_names:
@@ -150,10 +151,15 @@ class CustomLoginView(LoginView):
         return response
     
     def get_success_url(self):
-        # Redirigir según el rol del usuario
+        # Verificar si el usuario debe cambiar su contraseña
         user = self.request.user
         profile = ensure_user_profile(user)
         
+        if profile and profile.must_change_password:
+            # Redirigir a cambio de contraseña obligatorio
+            return reverse_lazy('change_password_required')
+        
+        # Redirigir según el rol del usuario
         if profile:
             role = profile.role
             if role == 'admin':
@@ -291,36 +297,117 @@ def profile_view(request):
     return render(request, "accounts/profile.html", context)
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
-def register_cliente(request):
-    """Vista de registro para clientes y proveedores"""
-    tipo_registro = request.GET.get('tipo', 'cliente')  # Por defecto cliente
-    
-    if request.method == 'POST':
-        tipo_registro = request.POST.get('tipo_registro', 'cliente')
+def create_user_admin(request):
+    """Vista para crear usuarios desde el panel de administración (solo admin y gerente)"""
+    try:
+        # Obtener rol sin import circular
+        role = None
+        if hasattr(request.user, 'userprofile'):
+            role = request.user.userprofile.role
+        elif hasattr(request.user, 'cliente'):
+            role = 'cliente'
         
-        if tipo_registro == 'proveedor':
-            form = ProveedorRegistrationForm(request.POST)
-        else:
-            form = ClienteRegistrationForm(request.POST)
+        # Solo admin y gerente pueden crear usuarios
+        if role not in ['admin', 'manager']:
+            messages.error(request, 'No tienes permiso para crear usuarios.')
+            return redirect('dashboard')
         
-        if form.is_valid():
-            user = form.save()
-            if tipo_registro == 'proveedor':
-                messages.success(request, f'¡Bienvenido {user.first_name}! Tu cuenta de proveedor ha sido creada exitosamente.')
-            else:
-                messages.success(request, f'¡Bienvenido {user.first_name}! Tu cuenta ha sido creada exitosamente.')
-            return redirect('login')
-    else:
-        if tipo_registro == 'proveedor':
-            form = ProveedorRegistrationForm()
+        # Verificar que exista al menos una organización
+        if not Organization.objects.exists():
+            messages.error(request, 'No hay organizaciones disponibles. Por favor, crea una organización primero.')
+            return redirect('admin_panel')
+        
+        tipo_usuario = request.GET.get('tipo', 'staff')  # Por defecto staff (admin/manager/employee)
+        
+        if request.method == 'POST':
+            tipo_usuario = request.POST.get('tipo_usuario', 'staff')
+            
+            try:
+                if tipo_usuario == 'cliente':
+                    form = AdminClienteCreationForm(request.POST)
+                elif tipo_usuario == 'proveedor':
+                    form = AdminProveedorCreationForm(request.POST)
+                else:
+                    form = AdminUserCreationForm(request.POST)
+                
+                if form.is_valid():
+                    try:
+                        user = form.save(request=request)
+                        temporary_password = getattr(user, '_temporary_password', None)
+                        tipo_display = {
+                            'staff': 'usuario del sistema',
+                            'cliente': 'cliente',
+                            'proveedor': 'proveedor'
+                        }.get(tipo_usuario, 'usuario')
+                        
+                        # Guardar información para mostrar en SweetAlert2
+                        # Necesitamos crear un nuevo formulario vacío para mostrar después del éxito
+                        if tipo_usuario == 'cliente':
+                            new_form = AdminClienteCreationForm()
+                        elif tipo_usuario == 'proveedor':
+                            new_form = AdminProveedorCreationForm()
+                        else:
+                            new_form = AdminUserCreationForm()
+                        
+                        # Renderizar la misma página con la información del usuario creado
+                        return render(request, 'accounts/create_user_admin.html', {
+                            'form': new_form,
+                            'tipo_usuario': tipo_usuario,
+                            'user_created_info': {
+                                'username': user.username,
+                                'email': user.email,
+                                'temporary_password': temporary_password,
+                                'tipo': tipo_display
+                            },
+                            'show_success_alert': True
+                        })
+                    except Exception as e:
+                        import traceback
+                        messages.error(request, f'Error al guardar usuario: {str(e)}')
+                        # Si hay error, mostrar el formulario con los errores
+                        if hasattr(request, 'user') and request.user.is_superuser:
+                            messages.error(request, f'Detalles: {traceback.format_exc()}')
+                # Si el formulario no es válido, se renderizará con los errores al final
+            except Exception as e:
+                import traceback
+                messages.error(request, f'Error al crear usuario: {str(e)}')
+                if hasattr(request, 'user') and request.user.is_superuser:
+                    messages.error(request, f'Detalles: {traceback.format_exc()}')
+                # Crear un formulario vacío si hay error
+                try:
+                    if tipo_usuario == 'cliente':
+                        form = AdminClienteCreationForm()
+                    elif tipo_usuario == 'proveedor':
+                        form = AdminProveedorCreationForm()
+                    else:
+                        form = AdminUserCreationForm()
+                except:
+                    form = AdminUserCreationForm()
         else:
-            form = ClienteRegistrationForm()
-    
-    return render(request, 'accounts/register_cliente.html', {
-        'form': form,
-        'tipo_registro': tipo_registro
-    })
+            try:
+                if tipo_usuario == 'cliente':
+                    form = AdminClienteCreationForm()
+                elif tipo_usuario == 'proveedor':
+                    form = AdminProveedorCreationForm()
+                else:
+                    form = AdminUserCreationForm()
+            except Exception as e:
+                messages.error(request, f'Error al cargar formulario: {str(e)}')
+                return redirect('admin_panel')
+        
+        return render(request, 'accounts/create_user_admin.html', {
+            'form': form,
+            'tipo_usuario': tipo_usuario,
+            'show_success_alert': False
+        })
+    except Exception as e:
+        import traceback
+        messages.error(request, f'Error inesperado: {str(e)}')
+        if hasattr(request, 'user') and request.user.is_superuser:
+            messages.error(request, f'Detalles del error: {traceback.format_exc()}')
+        return redirect('admin_panel')
 
 
 @login_required
@@ -393,3 +480,113 @@ def export_users_excel(request):
     wb.save(response)
     response['Content-Disposition'] = f'attachment; filename="usuarios_{timestamp}.xlsx"'
     return response
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def change_password_required(request):
+    """Vista para cambio de contraseña obligatorio cuando el usuario tiene contraseña temporal"""
+    from .forms import RequiredPasswordChangeForm
+    from .models import UserProfile
+    from django.contrib.auth import logout
+    
+    profile = ensure_user_profile(request.user)
+    
+    # Si no debe cambiar la contraseña, redirigir al dashboard
+    if not profile or not profile.must_change_password:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = RequiredPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            # Actualizar el perfil para indicar que ya cambió la contraseña
+            profile.must_change_password = False
+            profile.save()
+            
+            # Cerrar sesión y redirigir al login
+            logout(request)
+            messages.success(request, 'Tu contraseña ha sido cambiada exitosamente. Por favor, inicia sesión con tu nueva contraseña.')
+            return redirect('login')
+        else:
+            messages.error(request, 'Por favor corrige los errores en el formulario.')
+    else:
+        form = RequiredPasswordChangeForm(request.user)
+    
+    return render(request, 'accounts/change_password_required.html', {
+        'form': form,
+        'user': request.user
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def reset_user_password(request, user_id):
+    """Vista para que un administrador resetee la contraseña de un usuario"""
+    from .utils import generate_temporary_password, send_password_reset_email
+    from .models import UserProfile
+    from django.contrib.auth.models import User
+    
+    # Verificar permisos
+    role = None
+    if hasattr(request.user, 'userprofile'):
+        role = request.user.userprofile.role
+    
+    if role not in ['admin', 'manager']:
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('admin_panel')
+    
+    try:
+        target_user = User.objects.get(pk=user_id)
+        profile = ensure_user_profile(target_user)
+        
+        # Generar nueva contraseña temporal
+        temporary_password = generate_temporary_password()
+        target_user.set_password(temporary_password)
+        target_user.save()
+        
+        # Marcar que debe cambiar la contraseña
+        if profile:
+            profile.must_change_password = True
+            profile.save()
+        
+        # Enviar correo
+        send_password_reset_email(target_user, temporary_password, request)
+        
+        messages.success(request, f'Se ha generado una nueva contraseña temporal para el usuario "{target_user.username}". Se ha enviado un correo con las credenciales.')
+    except User.DoesNotExist:
+        messages.error(request, 'Usuario no encontrado.')
+    except Exception as e:
+        messages.error(request, f'Error al resetear contraseña: {str(e)}')
+    
+    return redirect('admin_panel')
+
+
+@login_required
+@require_http_methods(["GET"])
+def user_created_success(request):
+    """Vista para mostrar la contraseña generada después de crear un usuario"""
+    # Obtener rol sin import circular
+    role = None
+    if hasattr(request.user, 'userprofile'):
+        role = request.user.userprofile.role
+    elif hasattr(request.user, 'cliente'):
+        role = 'cliente'
+    
+    # Solo admin y gerente pueden acceder
+    if role not in ['admin', 'manager']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('dashboard')
+    
+    # Obtener información de la sesión
+    user_info = request.session.get('new_user_created')
+    if not user_info:
+        messages.info(request, 'No hay información de usuario creado.')
+        return redirect('admin_panel')
+    
+    # Limpiar la sesión
+    del request.session['new_user_created']
+    
+    return render(request, 'accounts/user_created_success.html', {
+        'user_info': user_info
+    })

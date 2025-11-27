@@ -19,7 +19,7 @@ class ProductForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '200'}),
             'ean_upc': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '50'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': '150'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
             'marca': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '100'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '100'}),
@@ -41,7 +41,7 @@ class ProductForm(forms.ModelForm):
             'control_por_lote': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'control_por_serie': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'fecha_vencimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'mes_vencimiento': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '12'}),
+            'mes_vencimiento': forms.Select(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
@@ -89,6 +89,24 @@ class ProductForm(forms.ModelForm):
         else:
             self.fields['sku'].initial = 'Se generará automáticamente'
         
+        # Configurar mes_vencimiento con nombres de meses
+        self.fields['mes_vencimiento'].widget = forms.Select(attrs={'class': 'form-control'})
+        self.fields['mes_vencimiento'].choices = [
+            ('', 'Seleccione un mes'),
+            (1, 'Enero'),
+            (2, 'Febrero'),
+            (3, 'Marzo'),
+            (4, 'Abril'),
+            (5, 'Mayo'),
+            (6, 'Junio'),
+            (7, 'Julio'),
+            (8, 'Agosto'),
+            (9, 'Septiembre'),
+            (10, 'Octubre'),
+            (11, 'Noviembre'),
+            (12, 'Diciembre'),
+        ]
+        
         # Si es proveedor, ocultar campos que no puede editar
         if user_role == 'proveedor':
             # Ocultar campos que solo el gerente puede modificar
@@ -96,6 +114,12 @@ class ProductForm(forms.ModelForm):
                 del self.fields['is_active']
             if 'estado_aprobacion' in self.fields:
                 del self.fields['estado_aprobacion']
+    
+    def clean_description(self):
+        description = self.cleaned_data.get('description')
+        if description and len(description) > 150:
+            raise forms.ValidationError('La descripción no puede exceder 150 caracteres.')
+        return description
     
     def clean(self):
         cleaned_data = super().clean()

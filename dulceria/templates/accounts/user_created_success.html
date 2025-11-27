@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Usuario Creado Exitosamente{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --lilis-red: #C8102E;
+    }
+
+    .btn-primary {
+        background-color: var(--lilis-red);
+        border-color: var(--lilis-red);
+    }
+
+    .btn-primary:hover {
+        background-color: #B00D26;
+        border-color: #B00D26;
+    }
+
+    .password-display {
+        background-color: #f8f9fa;
+        border: 2px solid var(--lilis-red);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .password-display code {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--lilis-red);
+        letter-spacing: 2px;
+        background-color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+    .copy-btn {
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle-fill"></i> Usuario Creado Exitosamente
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>El usuario "{{ user_info.username }}" ({{ user_info.tipo }}) ha sido creado exitosamente.</strong>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-envelope-fill"></i>
+                        Se ha enviado un correo electrónico a <strong>{{ user_info.email }}</strong> con las credenciales de acceso.
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Contraseña Generada Automáticamente:</h5>
+                    
+                    <div class="password-display">
+                        <label class="form-label fw-bold mb-3">Contraseña Temporal:</label>
+                        <div>
+                            <code id="password-display">{{ user_info.temporary_password }}</code>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary copy-btn" onclick="copyPassword()">
+                            <i class="bi bi-clipboard"></i> Copiar Contraseña
+                        </button>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Importante:</strong> Esta contraseña es temporal. El usuario deberá cambiarla al iniciar sesión por primera vez.
+                    </div>
+
+                    <div class="alert alert-light">
+                        <h6><i class="bi bi-person-check"></i> Información del Usuario:</h6>
+                        <ul class="mb-0">
+                            <li><strong>Usuario:</strong> {{ user_info.username }}</li>
+                            <li><strong>Email:</strong> {{ user_info.email }}</li>
+                            <li><strong>Tipo:</strong> {{ user_info.tipo }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{% url 'create_user_admin' %}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Crear Otro Usuario
+                        </a>
+                        <a href="{% url 'admin_panel' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al Panel de Administración
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyPassword() {
+    const password = document.getElementById('password-display').textContent;
+    navigator.clipboard.writeText(password).then(function() {
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> ¡Copiado!';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+        }, 2000);
+    }, function(err) {
+        alert('Error al copiar: ' + err);
+    });
+}
+</script>
+{% endblock %}
+

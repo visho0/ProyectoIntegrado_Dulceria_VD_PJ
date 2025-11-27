@@ -26,6 +26,7 @@ urlpatterns = [
     path("admin-panel/<str:app_label>/<str:model_name>/add/", admin_views.admin_model_create, name="admin_model_create"),
     path("admin-panel/<str:app_label>/<str:model_name>/<int:pk>/edit/", admin_views.admin_model_edit, name="admin_model_edit"),
     path("admin-panel/<str:app_label>/<str:model_name>/<int:pk>/delete/", admin_views.admin_model_delete, name="admin_model_delete"),
+    path("admin-panel/<str:app_label>/<str:model_name>/export-excel/", admin_views.admin_model_export_excel, name="admin_model_export_excel"),
     
     # Vista de proveedor
     path("proveedor/", views.proveedor_dashboard, name="proveedor_dashboard"),

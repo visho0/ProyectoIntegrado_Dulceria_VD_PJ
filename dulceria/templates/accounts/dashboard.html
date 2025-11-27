@@ -13,25 +13,63 @@
     }
 
     body {
-        background-color: var(--lilis-light);
-        color: #333;
+        background-color: white;
+        color: black;
+    }
+
+    /* Asegurar que el navbar mantenga su color rojo original */
+    nav.navbar,
+    nav.navbar.navbar-expand-lg,
+    nav.navbar.navbar-dark {
+        background-color: #C8102E !important;
+        background: #C8102E !important;
+    }
+
+    nav.navbar .container-fluid {
+        background-color: transparent !important;
+    }
+
+    nav.navbar .navbar-brand,
+    nav.navbar .navbar-nav .nav-link,
+    nav.navbar .navbar-nav .nav-link.active,
+    nav.navbar .navbar-nav .nav-link:hover,
+    nav.navbar .navbar-nav .nav-link:focus {
+        color: white !important;
+    }
+
+    nav.navbar .navbar-toggler {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    nav.navbar .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+    }
+
+    nav.navbar .dropdown-menu {
+        background-color: white !important;
+    }
+
+    nav.navbar .dropdown-item {
+        color: black !important;
     }
 
     .dashboard-header {
         background: var(--lilis-red);
-        color: var(--lilis-gold);
+        color: black;
+        border: none;
         border-radius: 12px;
         padding: 1.5rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        min-height: 140px;
     }
 
     .dashboard-header img {
         height: 80px;
         border-radius: 50%;
-        background-color: var(--lilis-light);
+        background-color: white;
         padding: 6px;
     }
 
@@ -39,6 +77,19 @@
         font-family: "Poppins", sans-serif;
         font-weight: 700;
         font-size: 1.8rem;
+        color: black !important;
+    }
+
+    .dashboard-header p {
+        color: black !important;
+    }
+
+    .dashboard-header p strong {
+        color: black !important;
+    }
+
+    .dashboard-header small {
+        color: black !important;
     }
 
     .card {
@@ -54,48 +105,123 @@
 
     .card-header {
         background: var(--lilis-red);
-        color: var(--lilis-gold);
+        color: black;
         border-top-left-radius: 12px;
         border-top-right-radius: 12px;
+        border-bottom: none;
         font-weight: bold;
     }
 
-    .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info {
-        border-color: var(--lilis-gold);
-        color: var(--lilis-red);
+    .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info, .btn-outline-warning {
+        border-color: transparent;
+        color: black;
         font-weight: 600;
     }
 
     .btn-outline-primary:hover,
     .btn-outline-success:hover,
     .btn-outline-danger:hover,
-    .btn-outline-info:hover {
-        background: var(--lilis-gold);
-        color: var(--lilis-red);
+    .btn-outline-info:hover,
+    .btn-outline-warning:hover {
+        background: var(--lilis-red);
+        color: black;
+        border-color: transparent;
+    }
+
+    /* Bordes negros solo para botones dentro de Acciones Rápidas */
+    .card .card-body .btn-outline-primary,
+    .card .card-body .btn-outline-success,
+    .card .card-body .btn-outline-danger,
+    .card .card-body .btn-outline-info,
+    .card .card-body .btn-outline-warning {
+        border-color: black;
+        border-width: 2px;
+    }
+
+    .card .card-body .btn-outline-primary:hover,
+    .card .card-body .btn-outline-success:hover,
+    .card .card-body .btn-outline-danger:hover,
+    .card .card-body .btn-outline-info:hover,
+    .card .card-body .btn-outline-warning:hover {
+        border-color: black;
     }
 
     .badge.bg-primary {
         background: var(--lilis-red) !important;
+        color: black !important;
+    }
+
+    .badge.bg-light {
+        background: white !important;
+        color: black !important;
+        border: none;
     }
 
     /* Tarjetas estadísticas personalizadas */
     .stat-card {
         background: var(--lilis-red);
-        color: var(--lilis-gold);
+        color: black;
         border: none;
+        min-height: 140px;
+        height: 100%;
+    }
+
+    .stat-card h4 {
+        color: black !important;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card p {
+        color: black !important;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 0;
     }
 
     .stat-card i {
-        opacity: 0.8;
+        opacity: 1;
+        color: black !important;
+        font-size: 4rem;
+    }
+
+    .stat-card .card-body {
+        padding: 2rem;
     }
 
     table thead {
         background: var(--lilis-red);
-        color: var(--lilis-gold);
+        color: black;
     }
 
     table tbody tr:hover {
-        background-color: #fff4e1;
+        background-color: #f0f0f0;
+    }
+
+    .card-body {
+        color: black !important;
+    }
+
+    .card-body h4,
+    .card-body p,
+    .card-body a,
+    .card-body strong {
+        color: black !important;
+    }
+
+    .text-reset {
+        color: black !important;
+    }
+
+    .text-reset h4,
+    .text-reset p {
+        color: black !important;
+    }
+
+    .container-fluid {
+        background-color: white;
     }
 
 </style>
@@ -121,7 +247,7 @@
 
     <!-- Estadísticas -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
+        <div class="col-md-6 mb-3">
             <a href="{% url 'products_list' %}" class="text-decoration-none text-reset">
                 <div class="card stat-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
@@ -135,7 +261,7 @@
             </a>
         </div>
 
-        <div class="col-md-3 mb-3">
+        <div class="col-md-6 mb-3">
             <a href="{% url 'categories_overview' %}" class="text-decoration-none text-reset">
                 <div class="card stat-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
