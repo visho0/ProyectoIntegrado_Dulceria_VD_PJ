@@ -98,28 +98,31 @@ def products_list(request):
     q = request.GET.get('q', '')
     sort = request.GET.get('sort', 'name')
     
-    # Obtener productos según el rol
+    # Obtener productos según el rol - optimizado con índices
     if role == 'proveedor':
         # Proveedores solo ven sus productos
-        products = Product.objects.select_related('category').filter(
+        products = Product.objects.select_related('category', 'creado_por').filter(
             is_active=True,
             creado_por=request.user
         )
     else:
         # Admin, manager y empleados ven todos los productos aprobados
-        products = Product.objects.select_related('category').filter(
+        # Usar índices: is_active, estado_aprobacion están indexados
+        products = Product.objects.select_related('category', 'creado_por', 'aprobado_por').filter(
             is_active=True,
             estado_aprobacion='APROBADO'
         )
     
-    # Aplicar búsqueda
+    # Aplicar búsqueda - optimizado para usar índices
     if q:
-        products = products.filter(
-            Q(name__icontains=q) |
-            Q(sku__icontains=q) |
-            Q(description__icontains=q) |
-            Q(category__name__icontains=q)
-        )
+        # Optimizar búsqueda: usar índices en name y sku cuando sea posible
+        search_conditions = Q()
+        if q.isdigit() or len(q) >= 3:  # Si parece un SKU o búsqueda sustancial
+            search_conditions |= Q(sku__icontains=q)  # Índice en sku
+        search_conditions |= Q(name__icontains=q)  # Índice en name
+        search_conditions |= Q(description__icontains=q)
+        search_conditions |= Q(category__name__icontains=q)
+        products = products.filter(search_conditions)
     
     # Aplicar ordenamiento
     allowed_sort_fields = ['name', '-name', 'price', '-price', 'stock', '-stock', 'category__name', '-category__name']
@@ -147,7 +150,7 @@ def products_list(request):
         'q': q,
         'sort': sort,
         'per_page': per_page,
-        'per_page_options': [5, 10, 25, 50],
+        'per_page_options': [10, 25, 50, 100, 250],  # Opciones optimizadas para grandes volúmenes
     }
     
     return render(request, "production/products_list.html", context)
@@ -158,10 +161,17 @@ def product_create(request):
     """Crear nuevo producto"""
     role = get_user_role(request)
     
+    # Solo admin, manager y proveedor pueden crear productos
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden crear
     allowed_roles = {'admin', 'manager', 'proveedor'}
     if not request.user.has_perm('production.add_product'):
         if role not in allowed_roles:
-            messages.error(request, 'No tienes permiso para agregar productos.')
+            if role == 'viewer':
+                messages.error(request, 'No tienes permiso para crear productos. El rol CONSULTA solo permite visualización.')
+            elif role == 'employee':
+                messages.error(request, 'No tienes permiso para crear productos. El rol BODEGA solo permite gestionar movimientos de inventario.')
+            else:
+                messages.error(request, 'No tienes permiso para agregar productos.')
             return redirect('products_list')
     
     if request.method == 'POST':
@@ -195,9 +205,18 @@ def product_edit(request, pk):
     """Editar producto existente"""
     # Verificar permiso solo si está asignado, sino permitir acceso según rol
     role = get_user_role(request)
+    
+    # Solo admin, manager y proveedor pueden editar productos
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden editar
+    allowed_roles = {'admin', 'manager', 'proveedor'}
     if not request.user.has_perm('production.change_product'):
-        if role not in {'admin', 'manager', 'proveedor'}:
-            messages.error(request, 'No tienes permiso para editar productos.')
+        if role not in allowed_roles:
+            if role == 'viewer':
+                messages.error(request, 'No tienes permiso para editar productos. El rol CONSULTA solo permite visualización.')
+            elif role == 'employee':
+                messages.error(request, 'No tienes permiso para editar productos. El rol BODEGA solo permite gestionar movimientos de inventario.')
+            else:
+                messages.error(request, 'No tienes permiso para editar productos.')
             return redirect('products_list')
     
     product = get_object_or_404(Product, pk=pk)
@@ -317,6 +336,7 @@ def tienda_online(request):
     categoria_id = request.GET.get('categoria', '')
     
     # Obtener productos activos disponibles (stock > 0) y aprobados
+    # Optimizado con select_related y uso de índices
     products = Product.objects.select_related('category').filter(
         is_active=True,
         stock__gt=0,
@@ -367,7 +387,7 @@ def tienda_online(request):
         'sort': sort,
         'categoria_id': categoria_id,
         'per_page': per_page,
-        'per_page_options': [5, 10, 25, 50],
+        'per_page_options': [10, 25, 50, 100, 250],  # Opciones optimizadas para grandes volúmenes
         'visitas': visitas + 1,
     }
     
@@ -494,9 +514,10 @@ def admin_panel(request):
     
     role = get_user_role(request)
     
-    # Solo administradores habilitados pueden acceder
-    if role != 'admin' and not request.user.is_superuser:
-        messages.error(request, 'No tienes permiso para acceder a la administración.')
+    # Solo administradores (ADMIN) pueden acceder
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
+    if role not in ['admin'] and not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para acceder a la administración. Solo los administradores pueden acceder a esta sección.')
         return redirect('dashboard')
     
     # Obtener todas las aplicaciones y modelos registrados en el admin
@@ -643,10 +664,47 @@ def aprobar_productos(request):
             producto = Product.objects.get(pk=producto_id, estado_aprobacion='PENDIENTE')
             if accion == 'aprobar':
                 from django.utils import timezone
+                from accounts.models import ProveedorUser
+                from .models import ProductoProveedor
+                
                 producto.estado_aprobacion = 'APROBADO'
                 producto.aprobado_por = request.user
                 producto.fecha_aprobacion = timezone.now()
                 producto.save()
+                
+                # Crear/actualizar registro en ProductoProveedor si el producto fue creado por un proveedor
+                if producto.creado_por:
+                    try:
+                        # Buscar el ProveedorUser del creador
+                        proveedor_user = ProveedorUser.objects.get(user=producto.creado_por)
+                        
+                        # Buscar el Proveedor correspondiente por RUT
+                        from .models import Proveedor
+                        try:
+                            proveedor = Proveedor.objects.get(rut=proveedor_user.rut)
+                            
+                            # Obtener el costo del producto (costo_estandar o costo_promedio o price)
+                            costo = producto.costo_estandar or producto.costo_promedio or producto.price or 0
+                            
+                            # Crear o actualizar el registro ProductoProveedor
+                            from decimal import Decimal
+                            ProductoProveedor.objects.update_or_create(
+                                product=producto,
+                                proveedor=proveedor,
+                                defaults={
+                                    'costo': Decimal(str(costo)) if costo else Decimal('0'),
+                                    'lead_time': 7,  # Valor por defecto
+                                    'min_lote': Decimal('1.000000'),  # Valor por defecto
+                                    'es_preferente': False
+                                }
+                            )
+                        except Proveedor.DoesNotExist:
+                            # Si no existe el Proveedor, no crear ProductoProveedor
+                            pass
+                    except ProveedorUser.DoesNotExist:
+                        # Si no es un proveedor, no crear ProductoProveedor
+                        pass
+                
                 messages.success(request, f'Producto "{producto.name}" aprobado exitosamente.')
             elif accion == 'rechazar':
                 producto.estado_aprobacion = 'RECHAZADO'

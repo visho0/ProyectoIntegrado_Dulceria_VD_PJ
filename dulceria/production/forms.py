@@ -121,6 +121,43 @@ class ProductForm(forms.ModelForm):
             raise forms.ValidationError('La descripción no puede exceder 150 caracteres.')
         return description
     
+    def clean_name(self):
+        """Validar que el nombre sea obligatorio"""
+        name = self.cleaned_data.get('name')
+        if not name or not name.strip():
+            raise forms.ValidationError('El nombre del producto es obligatorio.')
+        return name
+    
+    def clean_category(self):
+        """Validar que la categoría sea obligatoria"""
+        category = self.cleaned_data.get('category')
+        if not category:
+            raise forms.ValidationError('La categoría es obligatoria.')
+        return category
+    
+    def clean_uom_compra(self):
+        """Validar que la unidad de compra sea obligatoria"""
+        uom_compra = self.cleaned_data.get('uom_compra')
+        if not uom_compra or not uom_compra.strip():
+            raise forms.ValidationError('La unidad de compra es obligatoria.')
+        return uom_compra
+    
+    def clean_uom_venta(self):
+        """Validar que la unidad de venta sea obligatoria"""
+        uom_venta = self.cleaned_data.get('uom_venta')
+        if not uom_venta or not uom_venta.strip():
+            raise forms.ValidationError('La unidad de venta es obligatoria.')
+        return uom_venta
+    
+    def clean_stock_minimo(self):
+        """Validar que el stock mínimo sea obligatorio"""
+        stock_minimo = self.cleaned_data.get('stock_minimo')
+        if stock_minimo is None:
+            raise forms.ValidationError('El stock mínimo es obligatorio.')
+        if stock_minimo < 0:
+            raise forms.ValidationError('El stock mínimo no puede ser negativo.')
+        return stock_minimo
+    
     def clean(self):
         cleaned_data = super().clean()
         

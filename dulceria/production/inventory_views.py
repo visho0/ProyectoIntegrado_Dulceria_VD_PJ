@@ -64,8 +64,9 @@ def movimientos_list(request):
     """Lista de movimientos de inventario con filtros y búsqueda"""
     role = get_user_role(request)
     
-    # Solo usuarios autorizados pueden acceder
-    if role not in ['admin', 'manager', 'employee']:
+    # Admin, manager, employee (BODEGA) y viewer (CONSULTA) pueden ver
+    # CONSULTA solo puede ver, no crear/editar (verificado en templates y vistas)
+    if role not in ['admin', 'manager', 'employee', 'viewer']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('dashboard')
     
@@ -75,28 +76,32 @@ def movimientos_list(request):
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     
-    # Obtener movimientos
+    # Obtener movimientos - optimizado con select_related para evitar N+1 queries
     movimientos = MovimientoInventario.objects.select_related(
-        'producto', 'proveedor', 'bodega', 'creado_por'
+        'producto', 'producto__category',  # Optimizar acceso a producto y categoría
+        'proveedor',  # Optimizar acceso a proveedor
+        'bodega',  # Optimizar acceso a bodega
+        'creado_por'  # Optimizar acceso a usuario creador
     ).all()
     
-    # Aplicar búsqueda
+    # Aplicar búsqueda - optimizado para usar índices
     if q:
-        movimientos = movimientos.filter(
-            Q(producto__sku__icontains=q) |
-            Q(producto__name__icontains=q) |
-            Q(proveedor__razon_social__icontains=q) |
-            Q(proveedor__rut__icontains=q) |
-            Q(doc_referencia__icontains=q) |
-            Q(lote__icontains=q) |
-            Q(serie__icontains=q)
-        )
+        search_conditions = Q()
+        # Buscar en campos indexados primero
+        search_conditions |= Q(producto__sku__icontains=q)  # Usa índice de producto.sku
+        search_conditions |= Q(producto__name__icontains=q)  # Usa índice de producto.name
+        search_conditions |= Q(proveedor__razon_social__icontains=q)  # Usa índice de proveedor.razon_social
+        search_conditions |= Q(proveedor__rut__icontains=q)  # Usa índice de proveedor.rut
+        search_conditions |= Q(doc_referencia__icontains=q)
+        search_conditions |= Q(lote__icontains=q)
+        search_conditions |= Q(serie__icontains=q)
+        movimientos = movimientos.filter(search_conditions)
     
-    # Filtrar por tipo
+    # Filtrar por tipo - usa índice mov_tipo_fecha_idx
     if tipo:
         movimientos = movimientos.filter(tipo=tipo)
     
-    # Filtrar por fecha
+    # Filtrar por fecha - optimizado usando índice mov_fecha_idx
     if fecha_desde:
         try:
             fecha_desde_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
@@ -111,7 +116,7 @@ def movimientos_list(request):
         except ValueError:
             pass
     
-    # Ordenar por fecha descendente
+    # Ordenar por fecha descendente - usa índice mov_fecha_idx
     movimientos = movimientos.order_by('-fecha', '-created_at')
     
     # Paginación
@@ -137,7 +142,7 @@ def movimientos_list(request):
         'fecha_hasta': fecha_hasta,
         'tipos_movimiento': tipos_movimiento,
         'per_page': per_page,
-        'per_page_options': [10, 25, 50, 100],
+        'per_page_options': [25, 50, 100, 250, 500],  # Opciones optimizadas para grandes volúmenes
         'user_role': role,
     }
     
@@ -150,10 +155,11 @@ def movimiento_create(request):
     """Crear un nuevo movimiento de inventario"""
     role = get_user_role(request)
     
-    # Solo usuarios autorizados pueden acceder
+    # Solo admin, manager y employee (BODEGA) pueden crear movimientos
+    # CONSULTA (viewer) NO puede crear movimientos
     if role not in ['admin', 'manager', 'employee']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('dashboard')
+        messages.error(request, 'No tienes permiso para crear movimientos de inventario. Solo usuarios con permisos de administración, gerencia o bodega pueden realizar esta acción.')
+        return redirect('movimientos_list')
     
     if request.method == 'POST':
         form = MovimientoInventarioForm(request.POST)
@@ -186,9 +192,10 @@ def movimiento_edit(request, pk):
     """Editar un movimiento de inventario existente"""
     role = get_user_role(request)
     
-    # Solo admin y manager pueden editar
+    # Solo admin y manager pueden editar movimientos
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden editar
     if role not in ['admin', 'manager']:
-        messages.error(request, 'No tienes permiso para editar movimientos.')
+        messages.error(request, 'No tienes permiso para editar movimientos. Solo administradores y gerentes pueden realizar esta acción.')
         return redirect('movimientos_list')
     
     movimiento = get_object_or_404(MovimientoInventario, pk=pk)

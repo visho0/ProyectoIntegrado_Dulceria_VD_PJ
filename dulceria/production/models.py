@@ -23,8 +23,8 @@ class Category(models.Model):
 
 class Product(models.Model):
     # Identificación
-    name = models.CharField(max_length=200, verbose_name='Nombre')
-    sku = models.CharField(max_length=50, unique=True, verbose_name='SKU', editable=False)
+    name = models.CharField(max_length=200, verbose_name='Nombre')  # Índice creado mediante migración personalizada
+    sku = models.CharField(max_length=50, unique=True, verbose_name='SKU', editable=False)  # Ya tiene índice único
     ean_upc = models.CharField(max_length=50, unique=True, blank=True, null=True, verbose_name='EAN/UPC')
     description = models.TextField(blank=True, verbose_name='Descripción')
     category = models.ForeignKey(Category, on_delete=models.PROTECT, verbose_name='Categoría')
@@ -98,6 +98,7 @@ class Product(models.Model):
         verbose_name = 'Producto'
         verbose_name_plural = 'Productos'
         ordering = ['name']
+        indexes = []  # Los índices se crean mediante migración personalizada 0007
         # Nota: Django crea automáticamente los permisos:
         # - production.add_product
         # - production.change_product
@@ -203,12 +204,12 @@ class Proveedor(models.Model):
     
     # Identificación
     rut = models.CharField(max_length=12, validators=[validate_rut_chileno], unique=True, verbose_name='RUT', help_text='Formato: 12345678-9')
-    razon_social = models.CharField(max_length=200, verbose_name='Razón Social')
+    razon_social = models.CharField(max_length=200, verbose_name='Razón Social')  # Índice creado mediante migración personalizada
     nombre_fantasia = models.CharField(max_length=200, blank=True, verbose_name='Nombre de Fantasía')
     sitio_web = models.URLField(blank=True, verbose_name='Sitio web')
     
     # Datos de contacto
-    email = models.EmailField(verbose_name='Correo Electrónico')
+    email = models.EmailField(verbose_name='Correo Electrónico')  # Índice creado mediante migración personalizada
     telefono = models.CharField(max_length=30, blank=True, verbose_name='Teléfono')
     direccion = models.CharField(max_length=200, blank=True, verbose_name='Dirección')
     ciudad = models.CharField(max_length=100, blank=True, verbose_name='Ciudad')
@@ -236,6 +237,7 @@ class Proveedor(models.Model):
         verbose_name = 'Proveedor'
         verbose_name_plural = 'Proveedores'
         ordering = ['razon_social']
+        indexes = []  # Los índices se crean mediante migración personalizada 0007
     
     def __str__(self):
         return f"{self.razon_social} ({self.rut})"
@@ -325,9 +327,11 @@ class MovimientoInventario(models.Model):
         verbose_name_plural = 'Movimientos de Inventario'
         ordering = ['-fecha', '-created_at']
         indexes = [
+            # Índices que ya existen desde migraciones anteriores (0005)
             models.Index(fields=['-fecha'], name='mov_fecha_idx'),
             models.Index(fields=['producto', '-fecha'], name='mov_prod_fecha_idx'),
             models.Index(fields=['bodega', '-fecha'], name='mov_bod_fecha_idx'),
+            # mov_tipo_fecha_idx se crea en migración 0007 personalizada
         ]
     
     def __str__(self):

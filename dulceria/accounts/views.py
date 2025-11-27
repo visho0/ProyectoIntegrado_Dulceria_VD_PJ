@@ -138,11 +138,92 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
     form_class = LoginForm
 
+    def dispatch(self, request, *args, **kwargs):
+        """Verificar rate limiting antes de procesar el login"""
+        from django.core.cache import cache
+        from django.utils import timezone
+        from django.http import HttpResponseForbidden
+        
+        if request.method == 'POST':
+            # Obtener IP del cliente
+            ip_address = self.get_client_ip(request)
+            
+            # Verificar si la IP está bloqueada
+            lock_key = f'login_lock_{ip_address}'
+            lock_expiry = cache.get(lock_key)
+            if lock_expiry:
+                if timezone.now() < lock_expiry:
+                    remaining_time = int((lock_expiry - timezone.now()).total_seconds())
+                    return HttpResponseForbidden(
+                        f"Demasiados intentos fallidos. Por favor, intente nuevamente en {remaining_time} segundos."
+                    )
+                else:
+                    # El bloqueo expiró, eliminarlo
+                    cache.delete(lock_key)
+                    cache.delete(f'login_attempts_{ip_address}')
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def form_invalid(self, form):
+        """Incrementar contador de intentos fallidos"""
+        from django.core.cache import cache
+        from django.utils import timezone
+        
+        if self.request.method == 'POST':
+            ip_address = self.get_client_ip(self.request)
+            cache_key = f'login_attempts_{ip_address}'
+            lock_key = f'login_lock_{ip_address}'
+            
+            # Solo incrementar si no está bloqueado
+            if not cache.get(lock_key):
+                attempts = cache.get(cache_key, 0) + 1
+                # Guardar intentos por 30 minutos
+                cache.set(cache_key, attempts, timeout=1800)
+                
+                if attempts >= 5:
+                    # Bloquear por 15 minutos
+                    lock_expiry = timezone.now() + timezone.timedelta(minutes=15)
+                    cache.set(lock_key, lock_expiry, timeout=900)
+        
+        return super().form_invalid(form)
+    
+    def get_client_ip(self, request):
+        """Obtener la IP real del cliente considerando proxies"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR', '0.0.0.0')
+        return ip
+
     def form_valid(self, form):
+        from django.core.cache import cache
+        from .models_audit import AuditLog
+        
         response = super().form_valid(form)
         profile = ensure_user_profile(self.request.user)
         if profile:
             UserProfile.objects.filter(pk=profile.pk).update(sesiones_activas=F('sesiones_activas') + 1)
+        
+        # Limpiar contadores de rate limiting en login exitoso
+        ip_address = self.get_client_ip(self.request)
+        cache.delete(f'login_attempts_{ip_address}')
+        cache.delete(f'login_lock_{ip_address}')
+        
+        # Registrar evento de login en auditoría
+        try:
+            AuditLog.registrar(
+                request=self.request,
+                accion='LOGIN',
+                modelo='User',
+                objeto=self.request.user,
+                descripcion=f'Usuario "{self.request.user.username}" inició sesión',
+                ip_address=ip_address,
+                user_agent=self.request.META.get('HTTP_USER_AGENT', '')
+            )
+        except Exception:
+            pass  # No fallar si hay error en auditoría
+        
         remember = form.cleaned_data.get('remember_me')
         if remember:
             self.request.session.set_expiry(60 * 60 * 24 * 14)
@@ -192,17 +273,48 @@ class CustomLogoutView(LogoutView):
 
 def logout_view(request):
     """Vista de logout personalizada que limpia datos de sesión"""
+    from .models_audit import AuditLog
+    
+    # Registrar evento de logout en auditoría ANTES de cerrar sesión
+    if request.user.is_authenticated:
+        try:
+            # Obtener IP
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR', '0.0.0.0')
+            
+            AuditLog.registrar(
+                request=request,
+                accion='LOGOUT',
+                modelo='User',
+                objeto=request.user,
+                descripcion=f'Usuario "{request.user.username}" cerró sesión',
+                ip_address=ip_address,
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+        except Exception:
+            pass  # No fallar si hay error en auditoría
+    
     # 1) Limpiar datos específicos de la sesión
     for key in ("carrito", "filtros_busqueda", "onboarding_step"):
         request.session.pop(key, None)
     
-    # 2) Borrar cookies propias si las usaste
-    response = redirect("login")
-    # response.delete_cookie("remember_section", samesite="Lax")  # si la definiste antes
-    
-    # 3) Ahora cerrar sesión
+    # 2) Ahora cerrar sesión
     from django.contrib.auth import logout
     logout(request)
+    
+    # 3) Crear respuesta de redirect con headers de seguridad
+    response = redirect("login")
+    
+    # Agregar headers para prevenir acceso con botón Atrás
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['X-Frame-Options'] = 'DENY'
+    response['X-XSS-Protection'] = '1; mode=block'
     
     # Importante: agrega el mensaje DESPUÉS de logout (se crea una nueva sesión vacía)
     messages.info(request, "Sesión cerrada y datos temporales limpiados.")
@@ -310,8 +422,9 @@ def create_user_admin(request):
             role = 'cliente'
         
         # Solo admin y gerente pueden crear usuarios
+        # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
         if role not in ['admin', 'manager']:
-            messages.error(request, 'No tienes permiso para crear usuarios.')
+            messages.error(request, 'No tienes permiso para crear usuarios. Solo administradores y gerentes pueden acceder a esta función.')
             return redirect('dashboard')
         
         # Verificar que exista al menos una organización

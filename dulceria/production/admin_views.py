@@ -122,10 +122,11 @@ def admin_model_list(request, app_label, model_name):
     """Lista de objetos de un modelo específico"""
     role = get_user_role(request)
     
-    # Solo admin y gerente pueden acceder
-    if not (request.user.is_staff or role in ['admin', 'manager']):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('dashboard')
+    # Solo admin y gerente pueden crear objetos desde admin
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
+    if role not in ['admin', 'manager'] and not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para crear objetos. Solo administradores y gerentes pueden realizar esta acción.')
+        return redirect('admin_panel' if role in ['admin', 'manager'] else 'dashboard')
     
     model = get_model_from_string(app_label, model_name)
     if not model:
@@ -197,11 +198,13 @@ def admin_model_list(request, app_label, model_name):
         # Ordenamiento por defecto: por id descendente (más recientes primero)
         queryset = queryset.order_by('-id')
     
-    # Paginación optimizada
+    # Paginación optimizada - permitir valores más altos para pruebas de stress
     per_page = int(request.GET.get('per_page', 25))
-    # Limitar per_page para evitar problemas de rendimiento
-    if per_page > 100:
-        per_page = 100
+    # Limitar per_page a valores razonables pero permitir pruebas de stress
+    if per_page > 500:
+        per_page = 500
+    elif per_page < 10:
+        per_page = 10
     paginator = Paginator(queryset, per_page)
     page = request.GET.get('page', 1)
     
@@ -272,10 +275,11 @@ def admin_model_create(request, app_label, model_name):
     
     role = get_user_role(request)
     
-    # Solo admin y gerente pueden acceder
-    if not (request.user.is_staff or role in ['admin', 'manager']):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('dashboard')
+    # Solo admin y gerente pueden crear objetos desde admin
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
+    if role not in ['admin', 'manager'] and not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para crear objetos. Solo administradores y gerentes pueden realizar esta acción.')
+        return redirect('admin_panel' if role in ['admin', 'manager'] else 'dashboard')
     
     model = get_model_from_string(app_label, model_name)
     if not model:
@@ -286,6 +290,11 @@ def admin_model_create(request, app_label, model_name):
     if model == User and app_label == 'auth':
         # Redirigir directamente a la URL de creación de usuarios
         return redirect('/accounts/admin/crear-usuario/')
+    
+    # Bloquear creación de proveedores desde admin - deben registrarse desde autenticación
+    if app_label == 'production' and model_name.lower() == 'proveedor':
+        messages.error(request, 'Los proveedores deben registrarse desde la página de autenticación y verificación. No se pueden crear desde el panel de administración.')
+        return redirect('admin_panel')
     
     # Verificar permisos
     if not check_permission(request, app_label, model_name, 'add'):
@@ -361,10 +370,11 @@ def admin_model_edit(request, app_label, model_name, pk):
     """Editar un objeto existente"""
     role = get_user_role(request)
     
-    # Solo admin y gerente pueden acceder
-    if not (request.user.is_staff or role in ['admin', 'manager']):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('dashboard')
+    # Solo admin y gerente pueden crear objetos desde admin
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
+    if role not in ['admin', 'manager'] and not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para crear objetos. Solo administradores y gerentes pueden realizar esta acción.')
+        return redirect('admin_panel' if role in ['admin', 'manager'] else 'dashboard')
     
     model = get_model_from_string(app_label, model_name)
     if not model:
@@ -452,10 +462,11 @@ def admin_model_delete(request, app_label, model_name, pk):
     """Eliminar un objeto"""
     role = get_user_role(request)
     
-    # Solo admin y gerente pueden acceder
-    if not (request.user.is_staff or role in ['admin', 'manager']):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('dashboard')
+    # Solo admin y gerente pueden crear objetos desde admin
+    # BODEGA (employee) y CONSULTA (viewer) NO pueden acceder
+    if role not in ['admin', 'manager'] and not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para crear objetos. Solo administradores y gerentes pueden realizar esta acción.')
+        return redirect('admin_panel' if role in ['admin', 'manager'] else 'dashboard')
     
     model = get_model_from_string(app_label, model_name)
     if not model:

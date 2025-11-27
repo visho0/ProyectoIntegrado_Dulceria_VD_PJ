@@ -15,6 +15,35 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('username', 'first_name', 'last_name', 'email', 'userprofile__organization__name')
     ordering = ('username',)
     
+    # Personalizar fieldsets para eliminar campos de contraseña al editar
+    def get_fieldsets(self, request, obj=None):
+        """Personalizar fieldsets para eliminar sección de contraseña al editar"""
+        if not obj:  # Creando nuevo usuario
+            return (
+                (None, {'fields': ('username',)}),
+                ('Información personal', {'fields': ('first_name', 'last_name', 'email')}),
+                ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+            )
+        else:  # Editando usuario existente - NO mostrar contraseña
+            return (
+                (None, {'fields': ('username',)}),
+                ('Información personal', {'fields': ('first_name', 'last_name', 'email')}),
+                ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+                ('Fechas importantes', {'fields': ('last_login', 'date_joined')}),
+            )
+    
+    # Eliminar campos de contraseña del formulario de edición
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Eliminar campos de contraseña tanto en creación como edición
+        if 'password' in form.base_fields:
+            del form.base_fields['password']
+        if 'password1' in form.base_fields:
+            del form.base_fields['password1']
+        if 'password2' in form.base_fields:
+            del form.base_fields['password2']
+        return form
+    
     def get_queryset(self, request):
         """Filtrar usuarios según el rol del usuario actual"""
         qs = super().get_queryset(request)
@@ -98,3 +127,33 @@ class ClienteAdmin(admin.ModelAdmin):
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
+# Registrar modelo de auditoría
+try:
+    from .models_audit import AuditLog
+    
+    @admin.register(AuditLog)
+    class AuditLogAdmin(admin.ModelAdmin):
+        list_display = ('fecha_hora', 'usuario', 'accion', 'modelo', 'ip_address')
+        list_filter = ('accion', 'modelo', 'fecha_hora', 'usuario')
+        search_fields = ('usuario__username', 'modelo', 'descripcion', 'ip_address')
+        ordering = ('-fecha_hora',)
+        readonly_fields = ('fecha_hora', 'usuario', 'accion', 'modelo', 'content_type', 'object_id', 
+                          'descripcion', 'ip_address', 'user_agent', 'cambios', 'datos_anteriores', 
+                          'datos_nuevos')
+        list_per_page = 50
+        date_hierarchy = 'fecha_hora'
+        
+        def has_add_permission(self, request):
+            """No permitir crear registros manualmente"""
+            return False
+        
+        def has_change_permission(self, request, obj=None):
+            """No permitir editar registros"""
+            return False
+        
+        def has_delete_permission(self, request, obj=None):
+            """Solo superusuarios pueden eliminar registros de auditoría"""
+            return request.user.is_superuser
+except ImportError:
+    pass  # El modelo aún no existe o no está importado
