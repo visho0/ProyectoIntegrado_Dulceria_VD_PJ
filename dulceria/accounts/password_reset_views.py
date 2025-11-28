@@ -10,6 +10,8 @@ from django.contrib.auth.views import (
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.conf import settings
+import logging
 from .forms import CustomPasswordResetForm
 
 
@@ -26,9 +28,34 @@ class CustomPasswordResetView(PasswordResetView):
         Siempre mostrar mensaje de éxito, incluso si el email no existe.
         Esto previene revelar información sobre qué emails están registrados.
         """
+        # Determinar si usar HTTPS basado en la solicitud
+        use_https = self.request.is_secure() or self.request.scheme == 'https'
+        
+        # Obtener el tiempo de expiración del token (por defecto 3 días = 72 horas)
+        password_reset_timeout = getattr(settings, 'PASSWORD_RESET_TIMEOUT', 259200)  # 3 días en segundos
+        expiration_hours = password_reset_timeout // 3600
+        
         # Intentar enviar el email (solo se envía si el email existe)
-        form.save(request=self.request)
-        # Siempre redirigir a la página de éxito
+        try:
+            form.save(
+                request=self.request,
+                subject_template_name=self.subject_template_name,
+                email_template_name=self.email_template_name,
+                use_https=use_https,
+                extra_email_context={'expiration_time': expiration_hours},
+            )
+        except Exception as e:
+            # Si hay un error al enviar el correo, registrar el error pero no revelarlo al usuario
+            # Por seguridad, siempre mostramos el mismo mensaje de éxito
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error al enviar correo de recuperación de contraseña: {str(e)}', exc_info=True)
+            # En modo DEBUG o para administradores, mostrar el error
+            if settings.DEBUG or (hasattr(self.request, 'user') and self.request.user.is_authenticated and (self.request.user.is_superuser or getattr(self.request.user, 'is_staff', False))):
+                messages.warning(
+                    self.request,
+                    f'Se produjo un error al enviar el correo. Por favor, verifica la configuración de email. Error: {str(e)}'
+                )
+        # Siempre redirigir a la página de éxito (por seguridad, no revelamos si el email existe o no)
         return super().form_valid(form)
     
     def form_invalid(self, form):

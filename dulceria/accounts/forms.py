@@ -536,19 +536,33 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         Django por defecto solo envía email si existe, pero queremos mostrar siempre el mismo mensaje.
         """
         # Llamar al método padre para enviar el email si existe
-        email = self.cleaned_data["email"]
-        # Siempre retornar True para mostrar el mismo mensaje sin revelar si el email existe
-        super().save(
-            domain_override=domain_override,
-            subject_template_name=subject_template_name,
-            email_template_name=email_template_name,
-            use_https=use_https,
-            token_generator=token_generator,
-            from_email=from_email,
-            request=request,
-            html_email_template_name=html_email_template_name,
-            extra_email_context=extra_email_context
-        )
+        email = self.cleaned_data.get("email")
+        if not email:
+            # Si no hay email, no hacer nada pero retornar True para mantener la seguridad
+            return True
+        
+        # Intentar enviar el email, capturando cualquier excepción
+        try:
+            super().save(
+                domain_override=domain_override,
+                subject_template_name=subject_template_name,
+                email_template_name=email_template_name,
+                use_https=use_https,
+                token_generator=token_generator,
+                from_email=from_email,
+                request=request,
+                html_email_template_name=html_email_template_name,
+                extra_email_context=extra_email_context
+            )
+        except Exception as e:
+            # Si hay un error al enviar el correo, registrar el error pero no lanzarlo
+            # Esto permite que la vista maneje el error apropiadamente
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error al enviar correo de recuperación de contraseña para {email}: {str(e)}', exc_info=True)
+            # Re-lanzar la excepción para que la vista la maneje
+            raise
+        
         # Siempre retornar True para no revelar si el email existe
         return True
 
