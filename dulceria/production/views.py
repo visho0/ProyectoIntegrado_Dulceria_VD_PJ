@@ -134,7 +134,7 @@ def products_list(request):
     # Obtener elementos por página
     per_page = get_pagination_per_page(request, session_key='products_per_page', default=10)
     
-    # Paginación
+    # Paginación - usar count() cacheado si es posible para mejorar rendimiento
     paginator = Paginator(products, per_page)
     page = request.GET.get('page', 1)
     
@@ -377,8 +377,17 @@ def tienda_online(request):
     except EmptyPage:
         page_obj = paginator.page(paginator.num_pages)
     
-    # Obtener categorías para el filtro
-    categorias = Category.objects.all()
+    # Obtener categorías para el filtro - cachear IDs para mejor rendimiento
+    from django.core.cache import cache
+    cache_key_categorias = 'categorias_list_ids'
+    categoria_ids = cache.get(cache_key_categorias)
+    if categoria_ids is None:
+        categorias = Category.objects.all().order_by('name')
+        categoria_ids = list(categorias.values_list('id', flat=True))
+        cache.set(cache_key_categorias, categoria_ids, 3600)  # Cachear IDs por 1 hora
+        categorias = Category.objects.filter(id__in=categoria_ids).order_by('name')
+    else:
+        categorias = Category.objects.filter(id__in=categoria_ids).order_by('name')
     
     context = {
         'products': page_obj,

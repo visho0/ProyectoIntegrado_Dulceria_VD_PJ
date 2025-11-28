@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',  # Comprimir respuestas para reducir tiempo de carga
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,6 +81,10 @@ DATABASES = {
             # SSL solo si el certificado existe (AWS RDS)
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
+        # Optimización de conexiones para mejor rendimiento
+        'CONN_MAX_AGE': 600,  # Mantener conexiones vivas por 10 minutos (reducir overhead)
+        'AUTOCOMMIT': True,
+        'ATOMIC_REQUESTS': False,  # False para mejor rendimiento
     }
 }
 
@@ -125,15 +130,57 @@ SITE_NAME = os.getenv('SITE_NAME', 'Sistema de Gestión Dulcería')
 # CONFIGURACIÓN DE CACHÉ (para rate limiting)
 # ==========================
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'OPTIONS': {
-            'MAX_ENTRIES': 10000
+# ===========================================
+# CONFIGURACIÓN DE CACHÉ
+# ===========================================
+
+# Intentar usar Redis si está disponible (mejor para producción), sino usar LocMem
+REDIS_HOST = os.getenv('REDIS_HOST', None)
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
+
+# Verificar si Redis está disponible
+USE_REDIS = False
+if REDIS_HOST:
+    try:
+        import redis  # noqa: F401
+        from django.core.cache.backends.redis import RedisCache
+        USE_REDIS = True
+    except (ImportError, ModuleNotFoundError):
+        USE_REDIS = False
+
+if USE_REDIS and REDIS_HOST:
+    # Usar Redis para producción (mejor rendimiento y compartido entre instancias)
+    try:
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                'LOCATION': f'redis://{":" + REDIS_PASSWORD + "@" if REDIS_PASSWORD else ""}{REDIS_HOST}:{REDIS_PORT}/1',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                    'IGNORE_EXCEPTIONS': True,  # Continuar aunque Redis falle
+                },
+                'KEY_PREFIX': 'dulceria',
+                'TIMEOUT': 300,  # 5 minutos por defecto
+            }
+        }
+    except Exception:
+        # Si falla la configuración de Redis, usar LocMem como fallback
+        USE_REDIS = False
+
+if not USE_REDIS:
+    # Usar LocMem para desarrollo (más simple, no requiere Redis)
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'OPTIONS': {
+                'MAX_ENTRIES': 10000
+            },
+            'TIMEOUT': 300,  # 5 minutos por defecto
         }
     }
-}
 
 # ==========================
 # CONFIGURACIÓN DE SESIONES Y SEGURIDAD

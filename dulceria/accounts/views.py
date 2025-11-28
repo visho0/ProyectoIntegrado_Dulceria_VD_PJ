@@ -343,36 +343,94 @@ def dashboard(request):
         'user_profile': user_profile,
     }
     
+    # Caché de conteos para mejorar rendimiento
+    from django.core.cache import cache
+    from production.models import Product, Category
+    from organizations.models import Organization, Zone
+    
     # Admin puede ver todo
     if role == 'admin':
-        from production.models import Product, Category
-        from organizations.models import Organization, Zone
+        # Cachear conteos por 5 minutos (se actualizan frecuentemente pero no en cada request)
+        cache_key_products = 'dashboard_total_products'
+        cache_key_categories = 'dashboard_total_categories'
+        cache_key_orgs = 'dashboard_total_organizations'
+        cache_key_zones = 'dashboard_total_zones'
+        
+        total_products = cache.get(cache_key_products)
+        total_categories = cache.get(cache_key_categories)
+        total_organizations = cache.get(cache_key_orgs)
+        total_zones = cache.get(cache_key_zones)
+        
+        if total_products is None:
+            total_products = Product.objects.filter(is_active=True).count()
+            cache.set(cache_key_products, total_products, 300)  # 5 minutos
+        
+        if total_categories is None:
+            total_categories = Category.objects.count()
+            cache.set(cache_key_categories, total_categories, 600)  # 10 minutos (cambia menos)
+        
+        if total_organizations is None:
+            total_organizations = Organization.objects.count()
+            cache.set(cache_key_orgs, total_organizations, 600)  # 10 minutos
+        
+        if total_zones is None:
+            total_zones = Zone.objects.count()
+            cache.set(cache_key_zones, total_zones, 300)  # 5 minutos
         
         context.update({
-            'total_products': Product.objects.filter(is_active=True).count(),
-            'total_categories': Category.objects.count(),
-            'total_organizations': Organization.objects.count(),
-            'total_zones': Zone.objects.count(),
+            'total_products': total_products,
+            'total_categories': total_categories,
+            'total_organizations': total_organizations,
+            'total_zones': total_zones,
         })
     
     # Gerente puede ver productos y zonas de su organización
     elif role == 'manager':
-        from production.models import Product, Category
-        from organizations.models import Zone
+        cache_key_products = 'dashboard_total_products'
+        cache_key_categories = 'dashboard_total_categories'
+        cache_key_zones = f'dashboard_total_zones_{user_org.id if user_org else "none"}'
+        
+        total_products = cache.get(cache_key_products)
+        total_categories = cache.get(cache_key_categories)
+        total_zones = cache.get(cache_key_zones)
+        
+        if total_products is None:
+            total_products = Product.objects.filter(is_active=True).count()
+            cache.set(cache_key_products, total_products, 300)
+        
+        if total_categories is None:
+            total_categories = Category.objects.count()
+            cache.set(cache_key_categories, total_categories, 600)
+        
+        if total_zones is None:
+            total_zones = Zone.objects.filter(organization=user_org).count() if user_org else 0
+            cache.set(cache_key_zones, total_zones, 300)
         
         context.update({
-            'total_products': Product.objects.filter(is_active=True).count(),
-            'total_categories': Category.objects.count(),
-            'total_zones': Zone.objects.filter(organization=user_org).count(),
+            'total_products': total_products,
+            'total_categories': total_categories,
+            'total_zones': total_zones,
         })
     
     # Empleado solo puede ver productos
     else:  # employee o viewer
-        from production.models import Product, Category
+        cache_key_products = 'dashboard_total_products'
+        cache_key_categories = 'dashboard_total_categories'
+        
+        total_products = cache.get(cache_key_products)
+        total_categories = cache.get(cache_key_categories)
+        
+        if total_products is None:
+            total_products = Product.objects.filter(is_active=True).count()
+            cache.set(cache_key_products, total_products, 300)
+        
+        if total_categories is None:
+            total_categories = Category.objects.count()
+            cache.set(cache_key_categories, total_categories, 600)
         
         context.update({
-            'total_products': Product.objects.filter(is_active=True).count(),
-            'total_categories': Category.objects.count(),
+            'total_products': total_products,
+            'total_categories': total_categories,
         })
     
     return render(request, "accounts/dashboard.html", context)
