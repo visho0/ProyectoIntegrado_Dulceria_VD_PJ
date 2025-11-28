@@ -188,10 +188,25 @@ def admin_model_list(request, app_label, model_name):
     except:
         pass
     
-    # Ordenamiento
+    # Ordenamiento especial para Product: por categoría (alfabético) y luego por nombre
+    is_product_model = (app_label == 'production' and model_name.lower() == 'product')
+    
+    # Verificar si se debe agrupar por categoría (solo para productos)
+    group_by_category = False
+    if is_product_model:
+        group_by_category_param = request.GET.get('group_by_category', '1')  # Por defecto agrupado
+        group_by_category = group_by_category_param == '1' or group_by_category_param.lower() == 'true'
+    
     ordering = request.GET.get('ordering', '')
     if ordering:
         queryset = queryset.order_by(ordering)
+    elif is_product_model:
+        if group_by_category:
+            # Para productos agrupados: ordenar por categoría (alfabético) y luego por nombre
+            queryset = queryset.select_related('category').order_by('category__name', 'name')
+        else:
+            # Para productos sin agrupar: solo por nombre
+            queryset = queryset.select_related('category').order_by('name')
     elif model_admin and hasattr(model_admin, 'ordering'):
         queryset = queryset.order_by(*model_admin.ordering)
     else:
@@ -221,33 +236,86 @@ def admin_model_list(request, app_label, model_name):
         list_display = model_admin.list_display
     
     # Preparar datos para la tabla
-    table_data = []
-    for obj in page_obj:
-        row = {'obj': obj, 'fields': []}
-        for field in list_display:
-            if field == '__str__':
-                row['fields'].append(str(obj))
-            else:
-                # Intentar obtener el valor del campo
-                try:
-                    if '__' in field:
-                        # Campo relacionado (ej: 'category__name')
-                        parts = field.split('__')
-                        value = obj
-                        for part in parts:
-                            value = getattr(value, part, None)
-                            if value is None:
-                                break
-                        row['fields'].append(str(value) if value is not None else '-')
-                    else:
-                        # Campo directo
-                        value = getattr(obj, field, None)
-                        if callable(value):
-                            value = value()
-                        row['fields'].append(str(value) if value is not None else '-')
-                except Exception:
-                    row['fields'].append('-')
-        table_data.append(row)
+    # Si es Product y se debe agrupar, agrupar por categoría
+    if is_product_model and group_by_category:
+        table_data = []
+        grouped_data = {}
+        current_category = None
+        
+        for obj in page_obj:
+            category = obj.category if hasattr(obj, 'category') else None
+            category_name = category.name if category else 'Sin categoría'
+            
+            # Preparar fila
+            row = {'obj': obj, 'fields': [], 'category': category_name}
+            for field in list_display:
+                if field == '__str__':
+                    row['fields'].append(str(obj))
+                else:
+                    # Intentar obtener el valor del campo
+                    try:
+                        if '__' in field:
+                            # Campo relacionado (ej: 'category__name')
+                            parts = field.split('__')
+                            value = obj
+                            for part in parts:
+                                value = getattr(value, part, None)
+                                if value is None:
+                                    break
+                            row['fields'].append(str(value) if value is not None else '-')
+                        else:
+                            # Campo directo
+                            value = getattr(obj, field, None)
+                            if callable(value):
+                                value = value()
+                            row['fields'].append(str(value) if value is not None else '-')
+                    except Exception:
+                        row['fields'].append('-')
+            
+            # Agrupar por categoría
+            if category_name not in grouped_data:
+                grouped_data[category_name] = []
+            grouped_data[category_name].append(row)
+        
+        # Ordenar categorías alfabéticamente y construir table_data
+        for category_name in sorted(grouped_data.keys()):
+            # Agregar encabezado de categoría
+            table_data.append({
+                'is_category_header': True,
+                'category_name': category_name,
+                'category_count': len(grouped_data[category_name])
+            })
+            # Agregar productos de esta categoría
+            table_data.extend(grouped_data[category_name])
+    else:
+        # Para otros modelos, comportamiento normal
+        table_data = []
+        for obj in page_obj:
+            row = {'obj': obj, 'fields': []}
+            for field in list_display:
+                if field == '__str__':
+                    row['fields'].append(str(obj))
+                else:
+                    # Intentar obtener el valor del campo
+                    try:
+                        if '__' in field:
+                            # Campo relacionado (ej: 'category__name')
+                            parts = field.split('__')
+                            value = obj
+                            for part in parts:
+                                value = getattr(value, part, None)
+                                if value is None:
+                                    break
+                            row['fields'].append(str(value) if value is not None else '-')
+                        else:
+                            # Campo directo
+                            value = getattr(obj, field, None)
+                            if callable(value):
+                                value = value()
+                            row['fields'].append(str(value) if value is not None else '-')
+                    except Exception:
+                        row['fields'].append('-')
+            table_data.append(row)
     
     context = {
         'model': model,
@@ -259,6 +327,8 @@ def admin_model_list(request, app_label, model_name):
         'list_display': list_display,
         'search_query': search_query,
         'per_page': per_page,
+        'is_product_model': is_product_model,
+        'group_by_category': group_by_category if is_product_model else False,
         'has_add_permission': check_permission(request, app_label, model_name, 'add'),
         'has_change_permission': check_permission(request, app_label, model_name, 'change'),
         'has_delete_permission': check_permission(request, app_label, model_name, 'delete'),
@@ -488,7 +558,82 @@ def admin_model_delete(request, app_label, model_name, pk):
             return redirect('admin_model_list', app_label=app_label, model_name=model_name)
     
     obj_name = str(obj)
-    obj.delete()
+    
+    # Verificar si el producto tiene movimientos de inventario antes de intentar eliminar
+    if app_label == 'production' and model_name.lower() == 'product':
+        from production.models import MovimientoInventario
+        movimientos_count = MovimientoInventario.objects.filter(producto=obj).count()
+        if movimientos_count > 0:
+            messages.error(
+                request, 
+                f'No se puede eliminar el producto "{obj_name}" porque tiene {movimientos_count} movimiento(s) de inventario asociado(s). Elimine primero los movimientos.'
+            )
+            return redirect('admin_model_list', app_label=app_label, model_name=model_name)
+    
+    # Registrar auditoría ANTES de eliminar (para capturar el usuario)
+    # Solo para productos, ya que tienen signal específico
+    if app_label == 'production' and model_name.lower() == 'product':
+        try:
+            from accounts.models_audit import AuditLog
+            from django.contrib.contenttypes.models import ContentType
+            from accounts.signals import serialize_model
+            
+            # Capturar datos antes de eliminar
+            datos_anteriores = serialize_model(obj)
+            content_type = ContentType.objects.get_for_model(obj)
+            
+            # Obtener IP y User Agent
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR')
+            user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
+            
+            # Obtener SKU si existe
+            sku = getattr(obj, 'sku', 'N/A')
+            
+            # Registrar auditoría
+            AuditLog.objects.create(
+                usuario=request.user if request.user.is_authenticated else None,
+                accion='DELETE',
+                modelo='Product',
+                content_type=content_type,
+                object_id=obj.pk,
+                descripcion=f'Producto "{obj_name}" (SKU: {sku}) eliminado',
+                datos_anteriores=datos_anteriores,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error al registrar auditoría de eliminación: {str(e)}', exc_info=True)
+            # No fallar la eliminación si hay error en auditoría
+    
+    # Intentar eliminar el objeto
+    try:
+        obj.delete()
+    except Exception as e:
+        import logging
+        from django.db.models.deletion import ProtectedError
+        
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error al eliminar {model._meta.verbose_name}: {str(e)}', exc_info=True)
+        
+        # Manejar error de protección
+        if isinstance(e, ProtectedError):
+            objetos_protegidos = [str(obj) for obj in e.protected_objects[:5]]
+            messages.error(
+                request,
+                f'No se puede eliminar {model._meta.verbose_name.lower()} "{obj_name}" porque está siendo utilizado por otros registros: {", ".join(objetos_protegidos)}'
+            )
+        else:
+            messages.error(
+                request,
+                f'Error al eliminar {model._meta.verbose_name.lower()} "{obj_name}". Por favor, intenta nuevamente o contacta al administrador.'
+            )
+        return redirect('admin_model_list', app_label=app_label, model_name=model_name)
     
     messages.success(request, f'{model._meta.verbose_name} "{obj_name}" eliminado exitosamente.')
     return redirect('admin_model_list', app_label=app_label, model_name=model_name)

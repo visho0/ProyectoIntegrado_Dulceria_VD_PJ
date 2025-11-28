@@ -256,23 +256,65 @@ def product_edit(request, pk):
 @require_POST
 def product_delete_ajax(request, pk):
     """Elimina un producto y responde JSON para que el frontend actualice la UI sin recargar"""
-    # Verificar permiso solo si está asignado, sino permitir acceso según rol
-    role = get_user_role(request)
-    if not request.user.has_perm('production.delete_product'):
-        if role not in {'admin', 'manager'}:
-            return JsonResponse({"ok": False, "message": "No tienes permiso para eliminar productos."}, status=403)
-    
-    # Verificar que la petición sea AJAX
-    if not request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return HttpResponseBadRequest("Solo AJAX")
-    
-    product = get_object_or_404(Product, pk=pk)
-    nombre = product.name
-    
-    # Verificar que el producto se pueda eliminar (opcional: verificar stock, pedidos, etc.)
-    product.delete()
-    
-    return JsonResponse({"ok": True, "message": f"Producto '{nombre}' eliminado exitosamente."})
+    try:
+        # Verificar permiso solo si está asignado, sino permitir acceso según rol
+        role = get_user_role(request)
+        if not request.user.has_perm('production.delete_product'):
+            if role not in {'admin', 'manager'}:
+                return JsonResponse({"ok": False, "message": "No tienes permiso para eliminar productos."}, status=403)
+        
+        # Verificar que la petición sea AJAX
+        if not request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return HttpResponseBadRequest("Solo AJAX")
+        
+        product = get_object_or_404(Product, pk=pk)
+        nombre = product.name
+        sku = product.sku
+        
+        # Verificar que el producto se pueda eliminar
+        # Verificar si tiene movimientos de inventario (PROTECT)
+        from production.models import MovimientoInventario
+        movimientos_count = MovimientoInventario.objects.filter(producto=product).count()
+        if movimientos_count > 0:
+            return JsonResponse({
+                "ok": False, 
+                "message": f"No se puede eliminar el producto '{nombre}' porque tiene {movimientos_count} movimiento(s) de inventario asociado(s). Elimine primero los movimientos."
+            }, status=400)
+        
+        # Verificar si tiene relaciones con proveedores (CASCADE - se eliminarán automáticamente, pero informamos)
+        proveedores_count = product.proveedores.count() if hasattr(product, 'proveedores') else 0
+        
+        # Intentar eliminar el producto
+        try:
+            product.delete()
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error al eliminar producto {pk}: {str(e)}', exc_info=True)
+            
+            # Verificar si es un error de protección
+            from django.db.models.deletion import ProtectedError
+            if isinstance(e, ProtectedError):
+                objetos_protegidos = [str(obj) for obj in e.protected_objects]
+                return JsonResponse({
+                    "ok": False, 
+                    "message": f"No se puede eliminar el producto '{nombre}' porque está siendo utilizado por otros registros: {', '.join(objetos_protegidos[:5])}"
+                }, status=400)
+            
+            return JsonResponse({
+                "ok": False, 
+                "message": f"Error al eliminar el producto '{nombre}'. Por favor, intenta nuevamente o contacta al administrador."
+            }, status=500)
+        
+        return JsonResponse({"ok": True, "message": f"Producto '{nombre}' eliminado exitosamente."})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error en product_delete_ajax: {str(e)}', exc_info=True)
+        return JsonResponse({
+            "ok": False, 
+            "message": "Ocurrió un error al intentar eliminar el producto. Por favor, intenta nuevamente."
+        }, status=500)
 
 
 # ===========================================

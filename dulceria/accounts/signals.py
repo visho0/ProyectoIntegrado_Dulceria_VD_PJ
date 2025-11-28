@@ -15,15 +15,29 @@ def serialize_model(obj):
     if obj is None:
         return None
     
+    from decimal import Decimal
+    from datetime import date, datetime
+    
     data = {}
     for field in obj._meta.fields:
         value = getattr(obj, field.name, None)
-        # Convertir valores que no son serializables
-        if hasattr(value, 'isoformat'):  # DateTime, Date
-            value = value.isoformat()
-        elif hasattr(value, '__dict__'):  # Objetos relacionados
-            value = str(value)
-        data[field.name] = value
+        
+        # Convertir valores que no son serializables a JSON
+        if value is None:
+            data[field.name] = None
+        elif isinstance(value, Decimal):
+            # Convertir Decimal a float para JSON
+            data[field.name] = float(value)
+        elif isinstance(value, (date, datetime)):
+            # Convertir fechas a string ISO
+            data[field.name] = value.isoformat()
+        elif hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool)):
+            # Objetos relacionados o complejos
+            data[field.name] = str(value)
+        else:
+            # Valores simples (str, int, float, bool)
+            data[field.name] = value
+    
     return data
 
 
@@ -97,24 +111,71 @@ def audit_product_create_update(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=Product)
 def audit_product_delete(sender, instance, **kwargs):
     """Registrar eliminación de productos"""
+    from django.db import transaction
+    from django.utils import timezone
+    from datetime import timedelta
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Capturar TODA la información necesaria ANTES de on_commit
+    # En post_delete, el objeto aún existe en memoria pero ya fue eliminado de la BD
     try:
-        from .models_audit import AuditLog
-        from django.contrib.contenttypes.models import ContentType
+        nombre = getattr(instance, 'name', 'Desconocido')
+        sku = getattr(instance, 'sku', 'N/A')
+        object_id = instance.pk
         
-        content_type = ContentType.objects.get_for_model(Product)
-        datos_anteriores = serialize_model(instance)
-        
-        AuditLog.objects.create(
-            usuario=None,  # En delete no tenemos fácil acceso al usuario
-            accion='DELETE',
-            modelo='Product',
-            content_type=content_type,
-            object_id=instance.pk,
-            descripcion=f'Producto "{instance.name}" (SKU: {instance.sku}) eliminado',
-            datos_anteriores=datos_anteriores
-        )
-    except Exception:
-        pass
+        # Intentar serializar datos ANTES de on_commit (mientras el objeto existe en memoria)
+        try:
+            datos_anteriores = serialize_model(instance)
+        except Exception as e:
+            logger.warning(f'Error al serializar datos del producto eliminado: {str(e)}')
+            datos_anteriores = None
+    except Exception as e:
+        logger.warning(f'Error al obtener información del producto eliminado: {str(e)}')
+        nombre = 'Desconocido'
+        sku = 'N/A'
+        object_id = None
+        datos_anteriores = None
+    
+    # Usar on_commit para ejecutar después de que la transacción se complete
+    # Esto evita que errores en auditoría rompan la transacción principal
+    def crear_registro_auditoria():
+        try:
+            from .models_audit import AuditLog
+            from django.contrib.contenttypes.models import ContentType
+            
+            # Verificar si ya existe un registro de auditoría reciente (últimos 5 segundos)
+            # Esto evita duplicados cuando la auditoría se registra desde la vista
+            content_type = ContentType.objects.get_for_model(Product)
+            ahora = timezone.now()
+            hace_5_segundos = ahora - timedelta(seconds=5)
+            
+            registro_existente = AuditLog.objects.filter(
+                accion='DELETE',
+                modelo='Product',
+                content_type=content_type,
+                object_id=object_id,
+                fecha_hora__gte=hace_5_segundos
+            ).exists()
+            
+            # Solo crear si no existe un registro reciente
+            if not registro_existente:
+                AuditLog.objects.create(
+                    usuario=None,  # En delete no tenemos fácil acceso al usuario desde signal
+                    accion='DELETE',
+                    modelo='Product',
+                    content_type=content_type,
+                    object_id=object_id,
+                    descripcion=f'Producto "{nombre}" (SKU: {sku}) eliminado',
+                    datos_anteriores=datos_anteriores
+                )
+        except Exception as e:
+            # Loggear el error pero no fallar la eliminación
+            logger.error(f'Error al registrar auditoría de eliminación de producto: {str(e)}', exc_info=True)
+    
+    # Ejecutar después de que la transacción se complete
+    transaction.on_commit(crear_registro_auditoria)
 
 
 @receiver(post_save, sender=Proveedor)

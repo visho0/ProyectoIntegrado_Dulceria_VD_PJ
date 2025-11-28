@@ -175,14 +175,26 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// --- CSRF helper (lee la cookie csrftoken) ---
-function getCookie(name) {
+// --- CSRF helper ---
+function getCSRFToken() {
+  // Intentar obtener del meta tag
+  const metaTag = document.querySelector('meta[name=csrf-token]');
+  if (metaTag) {
+    return metaTag.getAttribute('content');
+  }
+  // Intentar obtener del input hidden (si existe algún formulario en la página)
+  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (csrfInput) {
+    return csrfInput.value;
+  }
+  // Intentar obtener de la cookie (fallback, aunque no funciona con CSRF_USE_SESSIONS=True)
   const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
+  const parts = value.split(`; csrftoken=`);
+  if (parts.length === 2) {
+    return parts.pop().split(';').shift();
+  }
+  return null;
 }
-
-const csrftoken = getCookie('csrftoken');
 
 // Delegación de eventos para botones borrar
 document.addEventListener('click', async (ev) => {
@@ -206,14 +218,27 @@ document.addEventListener('click', async (ev) => {
 
   if (!confirm.isConfirmed) return;
 
+  // Obtener token CSRF
+  const csrftoken = getCSRFToken();
+  if (!csrftoken) {
+    Swal.fire({
+      icon: "error",
+      title: "Error de seguridad",
+      text: "No se pudo obtener el token CSRF. Por favor, recarga la página."
+    });
+    return;
+  }
+
   try {
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'X-CSRFToken': csrftoken,
         'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json'
-      }
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
     });
 
     if (!resp.ok) {

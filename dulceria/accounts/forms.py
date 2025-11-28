@@ -510,7 +510,7 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         self.fields['email'].required = True
     
     def clean_email(self):
-        """Validar formato de email y no revelar si existe o no"""
+        """Validar formato de email (no revelar si existe o no por seguridad)"""
         email = self.cleaned_data.get('email')
         if not email:
             raise forms.ValidationError('El correo electrónico es obligatorio.')
@@ -538,32 +538,25 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         # Llamar al método padre para enviar el email si existe
         email = self.cleaned_data.get("email")
         if not email:
-            # Si no hay email, no hacer nada pero retornar True para mantener la seguridad
             return True
         
-        # Intentar enviar el email, capturando cualquier excepción
-        try:
-            super().save(
-                domain_override=domain_override,
-                subject_template_name=subject_template_name,
-                email_template_name=email_template_name,
-                use_https=use_https,
-                token_generator=token_generator,
-                from_email=from_email,
-                request=request,
-                html_email_template_name=html_email_template_name,
-                extra_email_context=extra_email_context
-            )
-        except Exception as e:
-            # Si hay un error al enviar el correo, registrar el error pero no lanzarlo
-            # Esto permite que la vista maneje el error apropiadamente
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f'Error al enviar correo de recuperación de contraseña para {email}: {str(e)}', exc_info=True)
-            # Re-lanzar la excepción para que la vista la maneje
-            raise
+        # Llamar al método padre - esto enviará el correo si el email existe
+        # El método padre retorna el número de correos enviados (0 si no existe el email)
+        # No capturamos excepciones aquí para que el backend de consola funcione correctamente
+        result = super().save(
+            domain_override=domain_override,
+            subject_template_name=subject_template_name,
+            email_template_name=email_template_name,
+            use_https=use_https,
+            token_generator=token_generator,
+            from_email=from_email,
+            request=request,
+            html_email_template_name=html_email_template_name,
+            extra_email_context=extra_email_context
+        )
         
         # Siempre retornar True para no revelar si el email existe
+        # (incluso si result es 0 porque el email no existe)
         return True
 
 

@@ -26,10 +26,18 @@
     <div class="card mb-3">
         <div class="card-body">
             <form method="get" id="search-form" class="row g-3">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <input type="text" class="form-control" id="search-input" name="q" value="{{ search_query }}" 
                            placeholder="Buscar en tiempo real...">
                 </div>
+                {% if is_product_model %}
+                <div class="col-md-2">
+                    <select class="form-select" name="group_by_category" id="group-by-category-select">
+                        <option value="1" {% if group_by_category %}selected{% endif %}>Agrupado por categoría</option>
+                        <option value="0" {% if not group_by_category %}selected{% endif %}>Lista simple</option>
+                    </select>
+                </div>
+                {% endif %}
                 <div class="col-md-2">
                     <select class="form-select" name="per_page" id="per-page-select">
                         <option value="10" {% if per_page == 10 %}selected{% endif %}>10 por página</option>
@@ -67,32 +75,41 @@
                         </thead>
                         <tbody>
                             {% for row in table_data %}
-                                <tr>
-                                    {% for field_value in row.fields %}
-                                        <td>{{ field_value }}</td>
-                                    {% endfor %}
-                                    {% if has_change_permission or has_delete_permission %}
-                                        <td>
-                                            {% if has_change_permission %}
-                                                <a href="{% url 'admin_model_edit' app_label model_name_slug row.obj.pk %}" 
-                                                   class="btn btn-sm btn-outline-primary btn-edit-admin"
-                                                   data-obj-name="{{ row.obj }}">
-                                                    <i class="bi bi-pencil"></i> Editar
-                                                </a>
-                                            {% endif %}
-                                            {% if has_delete_permission %}
-                                                <form method="post" action="{% url 'admin_model_delete' app_label model_name_slug row.obj.pk %}" 
-                                                      class="d-inline form-delete-admin" 
-                                                      data-obj-name="{{ row.obj }}">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                        <i class="bi bi-trash"></i> Eliminar
-                                                    </button>
-                                                </form>
-                                            {% endif %}
+                                {% if row.is_category_header %}
+                                    <tr class="table-info">
+                                        <td colspan="{% if has_change_permission or has_delete_permission %}{{ list_display|length|add:1 }}{% else %}{{ list_display|length }}{% endif %}" class="fw-bold">
+                                            <i class="bi bi-tag"></i> {{ row.category_name }} 
+                                            <span class="badge bg-secondary">{{ row.category_count }} producto{{ row.category_count|pluralize }}</span>
                                         </td>
-                                    {% endif %}
-                                </tr>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        {% for field_value in row.fields %}
+                                            <td>{{ field_value }}</td>
+                                        {% endfor %}
+                                        {% if has_change_permission or has_delete_permission %}
+                                            <td>
+                                                {% if has_change_permission %}
+                                                    <a href="{% url 'admin_model_edit' app_label model_name_slug row.obj.pk %}" 
+                                                       class="btn btn-sm btn-outline-primary btn-edit-admin"
+                                                       data-obj-name="{{ row.obj }}">
+                                                        <i class="bi bi-pencil"></i> Editar
+                                                    </a>
+                                                {% endif %}
+                                                {% if has_delete_permission %}
+                                                    <form method="post" action="{% url 'admin_model_delete' app_label model_name_slug row.obj.pk %}" 
+                                                          class="d-inline form-delete-admin" 
+                                                          data-obj-name="{{ row.obj }}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i> Eliminar
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -104,7 +121,7 @@
                         <ul class="pagination justify-content-center">
                             {% if objects.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ objects.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">
+                                    <a class="page-link" href="?page={{ objects.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}{% if is_product_model and group_by_category %}&group_by_category=1{% elif is_product_model and not group_by_category %}&group_by_category=0{% endif %}">
                                         Anterior
                                     </a>
                                 </li>
@@ -118,7 +135,7 @@
                             
                             {% if objects.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ objects.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}">
+                                    <a class="page-link" href="?page={{ objects.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}{% if is_product_model and group_by_category %}&group_by_category=1{% elif is_product_model and not group_by_category %}&group_by_category=0{% endif %}">
                                         Siguiente
                                     </a>
                                 </li>
@@ -143,6 +160,8 @@
 let searchTimeout;
 const searchInput = document.getElementById('search-input');
 const searchForm = document.getElementById('search-form');
+const groupByCategorySelect = document.getElementById('group-by-category-select');
+const perPageSelect = document.getElementById('per-page-select');
 
 if (searchInput) {
     searchInput.addEventListener('input', function() {
@@ -160,10 +179,57 @@ if (searchInput) {
                     url.searchParams.delete('q');
                 }
                 url.searchParams.set('page', '1'); // Resetear a primera página
+                // Mantener otros parámetros
+                if (groupByCategorySelect) {
+                    url.searchParams.set('group_by_category', groupByCategorySelect.value);
+                }
+                if (perPageSelect) {
+                    url.searchParams.set('per_page', perPageSelect.value);
+                }
                 window.location.href = url.toString();
             }
         }, 300);
     });
+}
+
+// Cambio automático al seleccionar agrupación por categoría
+if (groupByCategorySelect) {
+    groupByCategorySelect.addEventListener('change', function() {
+        const url = new URL(window.location);
+        url.searchParams.set('group_by_category', this.value);
+        url.searchParams.set('page', '1'); // Resetear a primera página
+        window.location.href = url.toString();
+    });
+}
+
+// Cambio automático al seleccionar cantidad por página
+if (perPageSelect) {
+    perPageSelect.addEventListener('change', function() {
+        const url = new URL(window.location);
+        url.searchParams.set('per_page', this.value);
+        url.searchParams.set('page', '1'); // Resetear a primera página
+        // Mantener agrupación por categoría si existe
+        if (groupByCategorySelect) {
+            url.searchParams.set('group_by_category', groupByCategorySelect.value);
+        }
+        window.location.href = url.toString();
+    });
+}
+
+// Helper para obtener token CSRF
+function getCSRFToken() {
+  // Intentar obtener del input hidden del formulario
+  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (csrfInput) {
+    return csrfInput.value;
+  }
+  // Intentar obtener de la cookie (fallback)
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrftoken=`);
+  if (parts.length === 2) {
+    return parts.pop().split(';').shift();
+  }
+  return null;
 }
 
 // SweetAlert2 para eliminaciones
@@ -185,6 +251,19 @@ document.addEventListener('submit', async (event) => {
     cancelButtonText: "Cancelar"
   });
   if (result.isConfirmed) {
+    // Asegurarse de que el token CSRF esté presente
+    const csrfToken = getCSRFToken();
+    if (csrfToken) {
+      // Crear un input hidden si no existe
+      let csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+      if (!csrfInput) {
+        csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        form.appendChild(csrfInput);
+      }
+      csrfInput.value = csrfToken;
+    }
     form.submit();
   }
 });
