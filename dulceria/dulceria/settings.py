@@ -90,10 +90,10 @@ DATABASES = {
 }
 
 # Configurar SSL solo si el certificado existe (para AWS RDS)
-#import os.path
-#ssl_cert_path = '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'
-#if os.path.exists(ssl_cert_path):
-#    DATABASES['default']['OPTIONS']['ssl'] = {'ca': ssl_cert_path}
+import os.path
+ssl_cert_path = '/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem'
+if os.path.exists(ssl_cert_path):
+    DATABASES['default']['OPTIONS']['ssl'] = {'ca': ssl_cert_path}
 # ==========================
 # IDIOMA Y ZONA HORARIA
 # ==========================
