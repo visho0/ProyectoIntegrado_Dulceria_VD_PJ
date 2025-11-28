@@ -207,9 +207,42 @@ def create_test_users():
     
     return result
 
+def create_categories():
+    """Crear categorías de dulces"""
+    print_step(4.5, "Creando Categorías de Dulces")
+    
+    result = run_command(
+        f"{sys.executable} manage.py create_categorias_dulces",
+        "Creación de categorías de dulces"
+    )
+    
+    return result
+
+def generate_test_data(proveedores=5000, productos=10000, movimientos=10000):
+    """Generar datos de prueba para stress test"""
+    print_step(5, f"Generando Datos de Prueba ({proveedores} proveedores, {productos} productos, {movimientos} movimientos)")
+    
+    print_info("⏳ Este proceso puede tardar varios minutos...")
+    print_info("   Por favor, sé paciente. No interrumpas el proceso.")
+    
+    result = run_command(
+        f"{sys.executable} manage.py generate_test_data --proveedores {proveedores} --productos {productos} --movimientos {movimientos}",
+        f"Generación de datos de prueba ({proveedores} proveedores, {productos} productos, {movimientos} movimientos)"
+    )
+    
+    if result:
+        print_success("Datos de prueba generados correctamente")
+        print("\n📋 Datos generados:")
+        print(f"   • {proveedores} proveedores")
+        print(f"   • {productos} productos")
+        print(f"   • {movimientos} movimientos de inventario")
+        print("\n💡 Los proveedores son buscables por RUT, razón social y email")
+    
+    return result
+
 def collect_static():
     """Recolectar archivos estáticos"""
-    print_step(5, "Recolectando Archivos Estáticos")
+    print_step(6, "Recolectando Archivos Estáticos")
     
     # Verificar que STATICFILES_DIRS esté configurado
     try:
@@ -360,7 +393,7 @@ def verify_product_images():
 
 def verify_installation():
     """Verificar que todo esté correcto"""
-    print_step(6, "Verificando Instalación")
+    print_step(7, "Verificando Instalación")
     
     try:
         import django
@@ -417,6 +450,15 @@ def verify_installation():
         traceback.print_exc()
         return False
 
+def ask_yes_no(question, default=False):
+    """Preguntar al usuario sí/no"""
+    default_text = "S/n" if not default else "s/N"
+    response = input(f"{question} ({default_text}): ").strip().lower()
+    
+    if response == '':
+        return default
+    return response in ['s', 'si', 'sí', 'y', 'yes']
+
 def show_final_instructions():
     """Mostrar instrucciones finales"""
     print_header("¡CONFIGURACIÓN COMPLETADA! 🎉")
@@ -452,15 +494,50 @@ def main():
         print("Ejecuta: cd dulceria")
         sys.exit(1)
     
+    # Verificar si se debe generar datos de prueba
+    generate_data = False
+    proveedores = 5000
+    productos = 10000
+    movimientos = 10000
+    
+    # Verificar variable de entorno primero
+    if os.getenv("GENERATE_TEST_DATA", "").lower() in ["true", "1", "yes", "si"]:
+        generate_data = True
+        print_info("Variable de entorno GENERATE_TEST_DATA detectada - Se generarán datos de prueba")
+    else:
+        # Preguntar al usuario
+        print("\n" + "="*70)
+        print("  ¿Deseas generar datos de prueba para stress test?")
+        print("="*70)
+        print("\nEsto creará:")
+        print(f"   • {proveedores} proveedores")
+        print(f"   • {productos} productos")
+        print(f"   • {movimientos} movimientos de inventario")
+        print("\n⏳ Tiempo estimado: 5-15 minutos")
+        print("⚠️  Solo necesario si quieres probar con grandes volúmenes de datos\n")
+        
+        generate_data = ask_yes_no("¿Generar datos de prueba?", default=False)
+    
     # Ejecutar pasos de configuración
     steps = [
         ("Verificar Base de Datos", check_database_config),
         ("Aplicar Migraciones", apply_migrations),
         ("Cargar Datos Iniciales", load_initial_data),
         ("Crear Usuarios", create_test_users),
+        ("Crear Categorías", create_categories),
+    ]
+    
+    # Agregar generación de datos si se solicita
+    if generate_data:
+        steps.append(
+            ("Generar Datos de Prueba", lambda: generate_test_data(proveedores, productos, movimientos))
+        )
+    
+    # Agregar pasos finales
+    steps.extend([
         ("Recolectar Estáticos", collect_static),
         ("Verificar Instalación", verify_installation),
-    ]
+    ])
     
     results = []
     
