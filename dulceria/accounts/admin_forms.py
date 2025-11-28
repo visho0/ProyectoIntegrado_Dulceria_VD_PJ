@@ -52,6 +52,13 @@ class AdminUserCreationForm(UserCreationForm):
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Rol'
     )
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Usuario Activo',
+        help_text='Si está desactivado, el usuario no podrá iniciar sesión.'
+    )
     
     class Meta:
         model = User
@@ -91,6 +98,9 @@ class AdminUserCreationForm(UserCreationForm):
         # Generar contraseña provisoria
         temporary_password = generate_temporary_password()
         
+        # Obtener estado activo (por defecto True)
+        is_active = self.cleaned_data.get('is_active', True)
+        
         # Crear usuario con contraseña provisoria
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
@@ -98,15 +108,19 @@ class AdminUserCreationForm(UserCreationForm):
             password=temporary_password,
             first_name=self.cleaned_data['first_name'],
             last_name=self.cleaned_data['last_name'],
+            is_active=is_active
         )
         
         if commit:
+            # Determinar estado del perfil según is_active
+            profile_state = 'ACTIVO' if is_active else 'BLOQUEADO'
+            
             # Crear perfil de usuario con must_change_password=True
             UserProfile.objects.create(
                 user=user,
                 organization=self.cleaned_data['organization'],
                 role=self.cleaned_data['role'],
-                state='ACTIVO',  # Estado obligatorio, siempre ACTIVO para nuevos
+                state=profile_state,
                 mfa_enabled=False,
                 must_change_password=True
             )
@@ -158,6 +172,13 @@ class AdminClienteCreationForm(UserCreationForm):
         label='Organización',
         empty_label='Seleccione una organización'
     )
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Usuario Activo',
+        help_text='Si está desactivado, el usuario no podrá iniciar sesión.'
+    )
     
     class Meta:
         model = User
@@ -190,6 +211,9 @@ class AdminClienteCreationForm(UserCreationForm):
         # Generar contraseña provisoria
         temporary_password = generate_temporary_password()
         
+        # Obtener estado activo (por defecto True)
+        is_active = self.cleaned_data.get('is_active', True)
+        
         # Crear usuario con contraseña provisoria
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
@@ -197,9 +221,13 @@ class AdminClienteCreationForm(UserCreationForm):
             password=temporary_password,
             first_name=self.cleaned_data['first_name'],
             last_name=self.cleaned_data['last_name'],
+            is_active=is_active
         )
         
         if commit:
+            # Determinar estado del perfil según is_active
+            profile_state = 'ACTIVO' if is_active else 'BLOQUEADO'
+            
             # Crear cliente
             Cliente.objects.create(
                 user=user,
@@ -215,7 +243,7 @@ class AdminClienteCreationForm(UserCreationForm):
                 organization=self.cleaned_data['organization'],
                 role='cliente',  # Rol fijo para clientes
                 phone=self.cleaned_data.get('phone', ''),
-                state='ACTIVO',  # Estado obligatorio, siempre ACTIVO para nuevos
+                state=profile_state,
                 mfa_enabled=False,
                 must_change_password=True
             )
@@ -349,6 +377,13 @@ class AdminProveedorCreationForm(UserCreationForm):
         label='Organización',
         empty_label='Seleccione una organización'
     )
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Usuario Activo',
+        help_text='Si está desactivado, el usuario no podrá iniciar sesión.'
+    )
     
     class Meta:
         model = User
@@ -390,15 +425,21 @@ class AdminProveedorCreationForm(UserCreationForm):
         # Generar contraseña provisoria
         temporary_password = generate_temporary_password()
         
+        # Obtener estado activo (por defecto True)
+        is_active = self.cleaned_data.get('is_active', True)
+        
         # Crear usuario con contraseña provisoria
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
             email=self.cleaned_data['email'],
             password=temporary_password,
             first_name=self.cleaned_data.get('razon_social', ''),
+            is_active=is_active
         )
         
         if commit:
+            # Determinar estado del perfil según is_active
+            profile_state = 'ACTIVO' if is_active else 'BLOQUEADO'
             # Crear ProveedorUser
             ProveedorUser.objects.create(
                 user=user,
@@ -440,7 +481,7 @@ class AdminProveedorCreationForm(UserCreationForm):
                 organization=self.cleaned_data['organization'],
                 role='proveedor',
                 phone=self.cleaned_data.get('phone', ''),
-                state='ACTIVO',
+                state=profile_state,
                 mfa_enabled=False,
                 must_change_password=True
             )

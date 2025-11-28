@@ -199,9 +199,38 @@ class CustomLoginView(LoginView):
     def form_valid(self, form):
         from django.core.cache import cache
         from .models_audit import AuditLog
+        from django.contrib import messages
+        
+        # Django ya verifica is_active automáticamente en el backend de autenticación
+        # Pero verificamos aquí también para mostrar mensaje personalizado
         
         response = super().form_valid(form)
-        profile = ensure_user_profile(self.request.user)
+        
+        # Después de autenticación exitosa, verificar estado del perfil
+        user = self.request.user
+        profile = ensure_user_profile(user)
+        
+        # Verificar si el usuario está activo (por si acaso Django no lo hizo)
+        if not user.is_active:
+            from django.contrib.auth import logout
+            logout(self.request)
+            messages.error(
+                self.request,
+                'Tu cuenta está inactiva. Por favor, contacta al administrador.'
+            )
+            return redirect('login')
+        
+        # Verificar si el perfil tiene estado ACTIVO
+        if profile and profile.state != 'ACTIVO':
+            from django.contrib.auth import logout
+            logout(self.request)
+            messages.error(
+                self.request,
+                'Tu cuenta está bloqueada. Por favor, contacta al administrador.'
+            )
+            return redirect('login')
+        
+        # Si todo está bien, continuar con el proceso normal
         if profile:
             UserProfile.objects.filter(pk=profile.pk).update(sesiones_activas=F('sesiones_activas') + 1)
         
