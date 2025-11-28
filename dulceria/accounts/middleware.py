@@ -1,11 +1,11 @@
 """
-Middleware para protección contra fuerza bruta y headers de seguridad
+Middleware para protección contra fuerza bruta, headers de seguridad y bloqueo de navegación cuando debe cambiar contraseña
 """
 from django.core.cache import cache
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
-import time
 
 
 class RateLimitMiddleware(MiddlewareMixin):
@@ -15,7 +15,7 @@ class RateLimitMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         # Solo aplicar rate limiting en la vista de login
-        if request.path == '/login/' and request.method == 'POST':
+        
             # Obtener IP del cliente
             ip_address = self.get_client_ip(request)
             
@@ -46,7 +46,7 @@ class RateLimitMiddleware(MiddlewareMixin):
                 cache.set(lock_key, lock_expiry, timeout=900)  # 15 minutos
                 cache.delete(cache_key)
                 return HttpResponseForbidden(
-                    "Demasiados intentos fallidos. Su IP ha sido bloqueada por 15 minutos."
+                    "Demasiados intentos fallidos. Por favor, intente nuevamente más tarde."
                 )
     
     def process_response(self, request, response):
@@ -86,10 +86,63 @@ class RateLimitMiddleware(MiddlewareMixin):
         return response
     
     def get_client_ip(self, request):
-        """Obtener la IP real del cliente considerando proxies"""
+        """
+        Obtener la IP real del cliente, considerando proxies
+        """
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
+            ip = x_forwarded_for.split(',')[0]
         else:
-            ip = request.META.get('REMOTE_ADDR', '0.0.0.0')
+            ip = request.META.get('REMOTE_ADDR')
         return ip
+
+
+class ForcePasswordChangeMiddleware(MiddlewareMixin):
+    """
+    Middleware para forzar cambio de contraseña cuando el usuario tiene contraseña temporal.
+    Bloquea acceso a todas las páginas excepto cambio de contraseña y logout.
+    """
+    
+    # URLs permitidas sin cambio de contraseña
+    ALLOWED_URLS = [
+        '/login/',
+        '/logout/',
+        '/password-reset/',
+        '/password-reset/done/',
+        '/password-reset-confirm/',
+        '/password-reset-complete/',
+        '/change-password-required/',
+        '/static/',
+        '/media/',
+    ]
+    
+    def process_request(self, request):
+        """
+        Verificar si el usuario debe cambiar su contraseña y bloquear navegación
+        """
+        # Solo aplicar a usuarios autenticados
+        if not request.user.is_authenticated:
+            return None
+        
+        # Permitir acceso a URLs permitidas
+        if any(request.path.startswith(url) for url in self.ALLOWED_URLS):
+            return None
+        
+        # Verificar si el usuario debe cambiar su contraseña
+        try:
+            if hasattr(request.user, 'userprofile'):
+                profile = request.user.userprofile
+                if profile.must_change_password:
+                    # Redirigir a cambio de contraseña obligatorio
+                    from django.shortcuts import redirect
+                    from django.contrib import messages
+                    messages.warning(
+                        request, 
+                        'Debes cambiar tu contraseña antes de continuar.'
+                    )
+                    return redirect('change_password_required')
+        except Exception:
+            # Si hay error, permitir acceso (no bloquear por errores técnicos)
+            pass
+        
+        return None

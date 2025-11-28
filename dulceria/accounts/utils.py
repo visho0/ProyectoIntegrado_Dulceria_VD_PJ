@@ -11,36 +11,69 @@ from django.utils.html import strip_tags
 
 def generate_temporary_password(length=12):
     """
-    Genera una contraseña provisoria robusta.
+    Genera una contraseña provisoria robusta y única.
     Requisitos:
-    - Longitud mínima: 8 caracteres
+    - Longitud mínima: 12 caracteres
     - Al menos 1 mayúscula, 1 minúscula, 1 dígito y 1 carácter especial
+    - No sigue patrones triviales (como "Aa1!Aa1!...")
+    - Cada llamada genera una contraseña única y aleatoria
     """
-    if length < 8:
+    if length < 12:
         length = 12
     
-    # Caracteres permitidos
+    # Caracteres permitidos (evitando caracteres confusos)
     uppercase = string.ascii_uppercase
     lowercase = string.ascii_lowercase
     digits = string.digits
+    # Caracteres especiales seguros (evitando confusión)
     special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
     
-    # Asegurar al menos un carácter de cada tipo
-    password = [
-        secrets.choice(uppercase),
-        secrets.choice(lowercase),
-        secrets.choice(digits),
-        secrets.choice(special),
-    ]
+    # Usar SystemRandom para mayor seguridad criptográfica
+    random_gen = secrets.SystemRandom()
     
-    # Completar con caracteres aleatorios
-    all_chars = uppercase + lowercase + digits + special
-    password.extend(secrets.choice(all_chars) for _ in range(length - 4))
+    # Intentar generar contraseña única hasta 10 veces
+    max_attempts = 10
+    for attempt in range(max_attempts):
+        # Asegurar al menos un carácter de cada tipo en posiciones aleatorias
+        password_chars = [None] * length
+        
+        # Asignar uno de cada tipo en posiciones aleatorias
+        required_positions = random_gen.sample(range(length), 4)
+        password_chars[required_positions[0]] = secrets.choice(uppercase)
+        password_chars[required_positions[1]] = secrets.choice(lowercase)
+        password_chars[required_positions[2]] = secrets.choice(digits)
+        password_chars[required_positions[3]] = secrets.choice(special)
+        
+        # Completar el resto con caracteres aleatorios
+        all_chars = uppercase + lowercase + digits + special
+        for i in range(length):
+            if password_chars[i] is None:
+                password_chars[i] = secrets.choice(all_chars)
+        
+        password = ''.join(password_chars)
+        
+        # Validar que no tenga patrones triviales
+        # No debe tener más de 2 caracteres consecutivos iguales
+        has_consecutive = any(
+            password[i] == password[i+1] == password[i+2]
+            for i in range(len(password) - 2)
+        )
+        
+        # No debe tener secuencias obvias (123, abc, ABC, etc.)
+        has_sequence = False
+        for i in range(len(password) - 2):
+            seq = password[i:i+3].lower()
+            if seq in ['abc', '123', 'qwe', 'asd', 'zxc']:
+                has_sequence = True
+                break
+        
+        # Si no tiene patrones problemáticos, retornar
+        if not has_consecutive and not has_sequence:
+            return password
     
-    # Mezclar aleatoriamente
-    secrets.SystemRandom().shuffle(password)
-    
-    return ''.join(password)
+    # Si después de 10 intentos no encontramos una buena, retornar la última generada
+    # (es improbable que todas tengan problemas)
+    return password
 
 
 def send_temporary_password_email(user, temporary_password, request=None):

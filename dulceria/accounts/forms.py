@@ -507,6 +507,50 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         })
         self.fields['email'].label = 'Correo Electrónico'
         self.fields['email'].help_text = 'Ingresa el correo electrónico asociado a tu cuenta.'
+        self.fields['email'].required = True
+    
+    def clean_email(self):
+        """Validar formato de email y no revelar si existe o no"""
+        email = self.cleaned_data.get('email')
+        if not email:
+            raise forms.ValidationError('El correo electrónico es obligatorio.')
+        
+        # Validar formato básico
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            raise forms.ValidationError('Por favor, ingresa un correo electrónico válido.')
+        
+        return email
+    
+    def save(self, domain_override=None,
+             subject_template_name='accounts/password_reset_subject.txt',
+             email_template_name='accounts/password_reset_email.html',
+             use_https=False, token_generator=None,
+             from_email=None, request=None, html_email_template_name=None,
+             extra_email_context=None):
+        """
+        Sobrescribir save para no revelar si el email existe o no.
+        Django por defecto solo envía email si existe, pero queremos mostrar siempre el mismo mensaje.
+        """
+        # Llamar al método padre para enviar el email si existe
+        email = self.cleaned_data["email"]
+        # Siempre retornar True para mostrar el mismo mensaje sin revelar si el email existe
+        super().save(
+            domain_override=domain_override,
+            subject_template_name=subject_template_name,
+            email_template_name=email_template_name,
+            use_https=use_https,
+            token_generator=token_generator,
+            from_email=from_email,
+            request=request,
+            html_email_template_name=html_email_template_name,
+            extra_email_context=extra_email_context
+        )
+        # Siempre retornar True para no revelar si el email existe
+        return True
 
 
 from django.contrib.auth.forms import SetPasswordForm
