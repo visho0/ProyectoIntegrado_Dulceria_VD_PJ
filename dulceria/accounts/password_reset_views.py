@@ -10,6 +10,7 @@ from django.contrib.auth.views import (
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect
 from django.conf import settings
 import logging
 from .forms import CustomPasswordResetForm
@@ -36,6 +37,8 @@ class CustomPasswordResetView(PasswordResetView):
         expiration_hours = password_reset_timeout // 3600
         
         # Intentar enviar el email (solo se envía si el email existe)
+        # NOTA: Llamamos a form.save() explícitamente aquí y luego redirigimos directamente
+        # para evitar que super().form_valid() llame a form.save() nuevamente (duplicación)
         try:
             form.save(
                 request=self.request,
@@ -56,7 +59,8 @@ class CustomPasswordResetView(PasswordResetView):
                     f'Se produjo un error al enviar el correo. Por favor, verifica la configuración de email. Error: {str(e)}'
                 )
         # Siempre redirigir a la página de éxito (por seguridad, no revelamos si el email existe o no)
-        return super().form_valid(form)
+        # Redirigimos directamente sin llamar a super().form_valid() para evitar duplicar el envío del email
+        return HttpResponseRedirect(self.get_success_url())
     
     def form_invalid(self, form):
         """Mostrar mensajes de error apropiados"""
