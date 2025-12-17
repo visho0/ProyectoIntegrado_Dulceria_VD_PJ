@@ -36,9 +36,8 @@ class CustomPasswordResetView(PasswordResetView):
         password_reset_timeout = getattr(settings, 'PASSWORD_RESET_TIMEOUT', 259200)  # 3 días en segundos
         expiration_hours = password_reset_timeout // 3600
         
-        # Intentar enviar el email (solo se envía si el email existe)
-        # NOTA: Llamamos a form.save() explícitamente aquí y luego redirigimos directamente
-        # para evitar que super().form_valid() llame a form.save() nuevamente (duplicación)
+        # Intentar enviar el email usando el método save() personalizado
+        # que envía el correo directamente con send_mail() (igual que creación de usuario)
         try:
             form.save(
                 request=self.request,

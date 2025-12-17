@@ -157,3 +157,63 @@ def send_password_reset_email(user, temporary_password, request=None):
         print(f"Error al enviar correo: {str(e)}")
         return False
 
+
+def send_password_reset_link_email(user, request=None, expiration_time=72):
+    """
+    Envía un correo con el enlace de recuperación de contraseña.
+    Similar a send_temporary_password_email pero para recuperación de contraseña.
+    """
+    try:
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.urls import reverse
+        
+        # Obtener URL base
+        if request:
+            base_url = f"{request.scheme}://{request.get_host()}"
+            protocol = request.scheme
+        else:
+            base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+            protocol = 'http'
+        
+        # Generar token y uid
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Construir URL de recuperación manualmente
+        reset_url = f"{base_url}/password-reset-confirm/{uid}/{token}/"
+        
+        # Renderizar template de email
+        context = {
+            'user': user,
+            'protocol': protocol,
+            'domain': request.get_host() if request else base_url.replace(f'{protocol}://', ''),
+            'uid': uid,
+            'uidb64': uid,  # Alias para compatibilidad con template
+            'token': token,
+            'reset_url': reset_url,
+            'expiration_time': expiration_time,
+            'site_name': getattr(settings, 'SITE_NAME', 'Sistema de Gestión'),
+        }
+        
+        html_message = render_to_string('accounts/password_reset_email.html', context)
+        plain_message = strip_tags(html_message)
+        
+        subject = f'Recuperación de Contraseña - {context["site_name"]}'
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        print(f"Error al enviar correo de recuperación: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+

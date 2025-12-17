@@ -556,32 +556,35 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
              from_email=None, request=None, html_email_template_name=None,
              extra_email_context=None):
         """
-        Sobrescribir save para no revelar si el email existe o no.
-        Django por defecto solo envía email si existe, pero queremos mostrar siempre el mismo mensaje.
+        Sobrescribir save para enviar correo directamente usando send_mail() como en creación de usuario.
+        Esto asegura que funcione igual que send_temporary_password_email().
         """
-        # Llamar al método padre para enviar el email si existe
+        from django.contrib.auth.models import User
+        from .utils import send_password_reset_link_email
+        
         email = self.cleaned_data.get("email")
         if not email:
             return True
         
-        # Llamar al método padre - esto enviará el correo si el email existe
-        # El método padre retorna el número de correos enviados (0 si no existe el email)
-        # No capturamos excepciones aquí para que el backend de consola funcione correctamente
-        result = super().save(
-            domain_override=domain_override,
-            subject_template_name=subject_template_name,
-            email_template_name=email_template_name,
-            use_https=use_https,
-            token_generator=token_generator,
-            from_email=from_email,
-            request=request,
-            html_email_template_name=html_email_template_name,
-            extra_email_context=extra_email_context
-        )
+        # Buscar usuario por email (case-insensitive)
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            # Si no existe, retornar True para no revelar información
+            return True
         
-        # Siempre retornar True para no revelar si el email existe
-        # (incluso si result es 0 porque el email no existe)
-        return True
+        # Obtener tiempo de expiración del contexto extra o usar default
+        expiration_time = 72  # 3 días por defecto
+        if extra_email_context and 'expiration_time' in extra_email_context:
+            expiration_time = extra_email_context['expiration_time']
+        
+        # Enviar correo directamente usando la función personalizada (igual que creación de usuario)
+        try:
+            send_password_reset_link_email(user, request=request, expiration_time=expiration_time)
+            return True
+        except Exception as e:
+            # Si falla, lanzar la excepción para que la vista la capture
+            raise
 
 
 from django.contrib.auth.forms import SetPasswordForm
