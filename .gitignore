@@ -46,7 +46,7 @@ static_root/
 # local_settings.py
 
 # Archivo de variables de entorno (contiene información sensible)
-# .env
+.env
 .env.local
 .env.*.local
 
