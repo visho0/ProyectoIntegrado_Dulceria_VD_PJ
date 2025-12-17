@@ -559,18 +559,24 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         Sobrescribir save para enviar correo directamente usando send_mail() como en creación de usuario.
         Esto asegura que funcione igual que send_temporary_password_email().
         """
+        import logging
         from django.contrib.auth.models import User
         from .utils import send_password_reset_link_email
         
+        logger = logging.getLogger(__name__)
+        
         email = self.cleaned_data.get("email")
         if not email:
+            logger.warning("No se proporcionó email en el formulario de recuperación")
             return True
         
         # Buscar usuario por email (case-insensitive)
         try:
             user = User.objects.get(email__iexact=email)
+            logger.info(f"Usuario encontrado para recuperación: {user.username} ({user.email})")
         except User.DoesNotExist:
             # Si no existe, retornar True para no revelar información
+            logger.info(f"Email no encontrado en la base de datos: {email}")
             return True
         
         # Obtener tiempo de expiración del contexto extra o usar default
@@ -580,10 +586,16 @@ class CustomPasswordResetForm(DjangoPasswordResetForm):
         
         # Enviar correo directamente usando la función personalizada (igual que creación de usuario)
         try:
-            send_password_reset_link_email(user, request=request, expiration_time=expiration_time)
+            logger.info(f"Intentando enviar correo de recuperación a {user.email}")
+            result = send_password_reset_link_email(user, request=request, expiration_time=expiration_time)
+            if result:
+                logger.info(f"Correo de recuperación enviado exitosamente a {user.email}")
+            else:
+                logger.error(f"Error al enviar correo de recuperación a {user.email}: función retornó False")
             return True
         except Exception as e:
-            # Si falla, lanzar la excepción para que la vista la capture
+            # Si falla, registrar el error y lanzar la excepción para que la vista la capture
+            logger.error(f"Error al enviar correo de recuperación a {user.email}: {str(e)}", exc_info=True)
             raise
 
 
