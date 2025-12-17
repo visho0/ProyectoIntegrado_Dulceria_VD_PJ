@@ -98,6 +98,18 @@ class ClienteRegistrationForm(UserCreationForm):
             'placeholder': 'Confirma tu contraseña'
         })
 
+    def clean_email(self):
+        """Validar que el email no esté ya registrado"""
+        email = self.cleaned_data.get('email')
+        if email:
+            from django.contrib.auth.models import User
+            # Verificar si el email ya existe (case-insensitive)
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError(
+                    'Este correo electrónico ya está registrado. Por favor, usa otro correo o recupera tu contraseña si olvidaste tus credenciales.'
+                )
+        return email
+    
     def clean_rut(self):
         rut = self.cleaned_data.get('rut')
         # Validar que solo contenga números, guión y K
@@ -340,6 +352,18 @@ class ProveedorRegistrationForm(UserCreationForm):
             'class': 'form-control',
             'placeholder': 'Confirma tu contraseña'
         })
+
+    def clean_email(self):
+        """Validar que el email no esté ya registrado"""
+        email = self.cleaned_data.get('email')
+        if email:
+            from django.contrib.auth.models import User
+            # Verificar si el email ya existe (case-insensitive)
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError(
+                    'Este correo electrónico ya está registrado. Por favor, usa otro correo o recupera tu contraseña si olvidaste tus credenciales.'
+                )
+        return email
 
     def clean_rut(self):
         """Validar que el RUT sea obligatorio y tenga formato correcto"""

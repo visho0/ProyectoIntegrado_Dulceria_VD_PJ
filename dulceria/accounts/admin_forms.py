@@ -78,6 +78,18 @@ class AdminUserCreationForm(UserCreationForm):
         if 'password2' in self.fields:
             del self.fields['password2']
     
+    def clean_email(self):
+        """Validar que el email no esté ya registrado"""
+        email = self.cleaned_data.get('email')
+        if email:
+            from django.contrib.auth.models import User
+            # Verificar si el email ya existe (case-insensitive)
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError(
+                    'Este correo electrónico ya está registrado. Por favor, usa otro correo o recupera tu contraseña si olvidaste tus credenciales.'
+                )
+        return email
+    
     def clean_role(self):
         """Validar que el rol sea obligatorio"""
         role = self.cleaned_data.get('role')
@@ -197,6 +209,18 @@ class AdminClienteCreationForm(UserCreationForm):
             del self.fields['password1']
         if 'password2' in self.fields:
             del self.fields['password2']
+    
+    def clean_email(self):
+        """Validar que el email no esté ya registrado"""
+        email = self.cleaned_data.get('email')
+        if email:
+            from django.contrib.auth.models import User
+            # Verificar si el email ya existe (case-insensitive)
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError(
+                    'Este correo electrónico ya está registrado. Por favor, usa otro correo o recupera tu contraseña si olvidaste tus credenciales.'
+                )
+        return email
     
     def clean(self):
         """Validaciones adicionales"""
@@ -402,6 +426,18 @@ class AdminProveedorCreationForm(UserCreationForm):
             del self.fields['password1']
         if 'password2' in self.fields:
             del self.fields['password2']
+    
+    def clean_email(self):
+        """Validar que el email no esté ya registrado"""
+        email = self.cleaned_data.get('email')
+        if email:
+            from django.contrib.auth.models import User
+            # Verificar si el email ya existe (case-insensitive)
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError(
+                    'Este correo electrónico ya está registrado. Por favor, usa otro correo o recupera tu contraseña si olvidaste tus credenciales.'
+                )
+        return email
     
     def clean_razon_social(self):
         """Validar que la razón social sea obligatoria"""
