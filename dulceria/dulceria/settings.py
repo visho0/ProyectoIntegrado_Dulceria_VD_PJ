@@ -67,16 +67,31 @@ WSGI_APPLICATION = 'dulceria.wsgi.application'
 # BASE DE DATOS AWS RDS
 # ==========================
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.mysql',
+#        'NAME': os.getenv("DB_NAME"),
+#        'USER': os.getenv("DB_USER"),
+#        'PASSWORD': os.getenv("DB_PASSWORD"),
+#        'HOST': os.getenv("DB_HOST"),
+#        'PORT': os.getenv("DB_PORT", "3306"),
+#        'OPTIONS': {
+#            # SSL solo si el certificado existe (AWS RDS)
+#            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#        },
+#    }
+#}
+
+#wampp
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("DB_NAME"),
-        'USER': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST"),
-        'PORT': os.getenv("DB_PORT", "3306"),
+        'NAME': 'dulceria_db',       # El nombre de la base de datos que creaste en phpMyAdmin
+        'USER': 'root',                  # Usuario por defecto de WampServer
+        'PASSWORD': '',                  # Por defecto en WampServer viene sin contraseña
+        'HOST': '127.0.0.1, localhost',             # Mejor usar 127.0.0.1 que 'localhost' para evitar problemas de socket en Windows
+        'PORT': '3306',
         'OPTIONS': {
-            # SSL solo si el certificado existe (AWS RDS)
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
